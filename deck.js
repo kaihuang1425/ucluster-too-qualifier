@@ -79,7 +79,10 @@ var DECK_DATA = {
       E('line', { x1: x(ridge), x2: x(ridge), y1: y(n.P), y2: B, class: 'ridge', style: 'stroke:' + n.c }, svg);
       E('text', { x: x(ridge) + 10, y: B - 16 - i * 30, class: 'rl', style: 'fill:' + n.c }, svg, 'ridge ' + ridge.toFixed(1));
       E('path', { d: 'M' + x(0.1) + ' ' + y(n.B * 0.1) + ' L' + x(ridge) + ' ' + y(n.P) + ' L' + x(100) + ' ' + y(n.P), class: 'ln', style: 'stroke:' + n.c + ';--k:' + (i * 0.3) + 's' }, svg);
-      E('text', { x: R - 4, y: y(n.P) + (i ? -16 : 34), class: 'rl', 'text-anchor': 'end', style: 'fill:' + n.c }, svg, narrow ? n.n : n.n + ' · ' + fmt(n.P, 0) + ' GFLOP/s · ' + Math.round(n.B) + ' GB/s');
+    });
+    // roof labels go on after every line, and sit clear of the slope, so no line runs through the text
+    nodes.forEach(function (n, i) {
+      E('text', { x: R - 4, y: y(n.P) + (i ? -16 : (narrow ? 34 : 60)), class: 'rl', 'text-anchor': 'end', style: 'fill:' + n.c }, svg, narrow ? n.n : n.n + ' · ' + fmt(n.P, 0) + ' GFLOP/s · ' + Math.round(n.B) + ' GB/s');
     });
     nodes.forEach(function (n, i) {
       var g = E('g', { class: 'pt', style: '--k:' + (i * 0.25) + 's' }, svg);

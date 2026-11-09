@@ -166,7 +166,7 @@ body { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 @keyframes dash { to { stroke-dashoffset: 0; } }
 .chart .ideal { fill: none; stroke: var(--dim); stroke-width: 2.5; stroke-dasharray: 8 10; }
 .chart .ridge { stroke-width: 2; stroke-dasharray: 6 8; opacity: .6; }
-.chart .rl { font-size: 21px; font-weight: 500; }
+.chart .rl { font-size: 21px; font-weight: 500; paint-order: stroke; stroke: var(--bg); stroke-width: 8px; stroke-linejoin: round; }
 .chart .pl { fill: var(--ink); font-size: 22px; font-weight: 500; }
 .chart .pt { opacity: 0; transform-box: fill-box; transform-origin: center; }
 .dk.on .chart .pt { animation: pt-in .6s var(--spring) calc(1.9s + var(--k, 0s)) both; }
