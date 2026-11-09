@@ -13,6 +13,7 @@ What it does
     the change live, and compares the result with the original files line by line
   * publishes again from an out-of-date page to test both a clash and an edit that lands cleanly
   * tests a failing check, an update to the same pull request, and closing it
+  * with publishing switched off, downloads the edited file and checks the upload guide
   * types in WebKit (Safari's engine) on an iPad-size screen and on a phone
 """
 import difflib
@@ -136,6 +137,10 @@ def main():
     env = dict(os.environ, GITHUB_CLIENT_SECRET=secret)
     m = start(["node", "tools/mock_github.mjs"], dict(env, MOCK_PORT=str(mport)), mock + "/__mock/main")
     d = start(["node", "tools/dev.mjs"], dict(env, PORT=str(dport), GITHUB_CLIENT_ID="local-test", GITHUB_API=mock, GITHUB_WEB=mock, DECK_SITE=base), base + "/index.html")
+    # a second copy with publishing switched off, as on the live site before the GitHub App exists
+    oport = free_port(); off = "http://127.0.0.1:%d" % oport
+    plain = {k: v for k, v in os.environ.items() if not k.startswith("GITHUB_CLIENT")}
+    o = start(["node", "tools/dev.mjs"], dict(plain, PORT=str(oport)), off + "/index.html")
     errors = []
     try:
         with sync_playwright() as p:
@@ -264,6 +269,29 @@ def main():
             pg.wait_for_function("!document.querySelector('.ed-pr.on')", timeout=10000)
             st = mock_get(mock, "/__mock/main")
             check([x for x in st["pulls"] if x["number"] == 2][0]["state"] == "closed" and head not in st["refs"], "closing the pull request also removes its branch")
+            ctx.close()
+
+            print("Download and upload, when publishing is not switched on")
+            ctx = b.new_context(viewport={"width": 1440, "height": 900}, accept_downloads=True)
+            pg = ctx.new_page(); watch(pg, errors)
+            pg.goto(off + "/?edit#4"); ready(pg)
+            replace(pg, "slide(4).querySelector('.lv b')", "+50%")
+            pg.evaluate("document.activeElement.blur()")
+            pg.click('[data-a="publish"]')
+            check(pg.query_selector('.ed-modal [data-a="send"], .ed-modal [data-a="signin"]') is None and pg.is_visible('.ed-modal .ed-btn.primary[data-a="download"]'), "without publishing, Download is the main button")
+            with pg.expect_download() as dl:
+                pg.click('.ed-modal [data-a="download"]')
+            saved = dl.value.path()
+            text = open(saved, encoding="utf-8").read()
+            check(dl.value.suggested_filename == "index.html" and changed_lines(orig["index.html"], text) and len(changed_lines(orig["index.html"], text)) == 2 and "--v:50" in text, "the downloaded index.html differs from the original on one line only")
+            href = pg.get_attribute(".ed-modal a.ed-btn.primary", "href")
+            check(href == "https://github.com/kaihuang1425/ucluster-too-qualifier/upload/main", "the next screen links to GitHub's upload page")
+            check("index (1).html" in pg.text_content(".ed-modal"), "it warns about browsers renaming the file")
+            si = pg.evaluate("() => { " + JS_SLIDE + " return +slide(4).querySelector('.lv b').getAttribute('data-si'); }")
+            pg.evaluate("si => localStorage.setItem('deck-edit:v1', JSON.stringify({ v: 1, units: { [si]: { old: '+40%', new: '+48%' } }, data: null, pr: null, title: '' }))", si)
+            pg.reload(); ready(pg)
+            pg.wait_for_selector(".ed-toast.on", timeout=5000)
+            check("live" in pg.inner_text(".ed-toast") and summary(pg).startswith("Click any text"), "an edit that is already in the deck is recognised, not reported as a clash")
             ctx.close(); b.close()
 
             print("Typing in WebKit (Safari's engine)")
@@ -293,7 +321,7 @@ def main():
             check(summary(pg).startswith("1 change"), "an edit on a phone is counted")
             ctx.close(); wk.close()
     finally:
-        d.terminate(); m.terminate()
+        d.terminate(); m.terminate(); o.terminate()
 
     for e in errors:
         print("  FAIL  " + e)
