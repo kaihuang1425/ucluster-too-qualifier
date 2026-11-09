@@ -22,7 +22,7 @@ This is the easiest route. Open https://ucluster-too-qualifier.vercel.app/?edit 
 The editor looks after the details that are easy to get wrong by hand.
 
 - When you change a big number such as 15,345, its count-up value changes with it.
-- When you change a bar's label such as +48%, the bar's length follows.
+- When you change a bar's label such as +22%, the bar's length follows.
 - While you type, the editor runs the same tests as the automatic check. A slide that no longer fits its frame is outlined in red and blocks publishing. House-style slips such as a semicolon show as notes that do not block anything.
 - Your edit is applied to the newest version of the deck, so two people editing different slides never overwrite each other. If someone changed the same sentence first, the editor says which one and keeps the rest of your work.
 
@@ -91,7 +91,7 @@ Decimals also need `data-dec`, which is the number of decimal places.
 **A bar.** The bar length `--v` must match the label next to it.
 
 ```html
-<span class="lv-t"><i style="--v:48"></i></span><b>+48%</b>
+<span class="lv-t"><i style="--v:22"></i></span><b>+22%</b>
 ```
 
 **A chart.** Edit `DECK_DATA` at the top of `deck.js`. Then update any slide text that quotes the same number.
@@ -150,7 +150,7 @@ If the secret ever leaks, generate a new one on the app's page, update `GITHUB_C
 
 ## Where the numbers come from
 
-- Round 1, EPCC Cirrus, from `BigBouncyBoii/CIUK-UCLusters` (private)
+- Round 1, EPCC Cirrus, from our submitted EPCC report for the HPL sweeps, and `BigBouncyBoii/CIUK-UCLusters` (private) for the rest
 - Round 2, DiRAC Durham, from [`bobby-ta/cluster-challenge-durham`](https://github.com/bobby-ta/cluster-challenge-durham)
 - Round 3, UCL Condenser, from [`Adellama75/cluster-challenge-ucl`](https://github.com/Adellama75/cluster-challenge-ucl)
 
