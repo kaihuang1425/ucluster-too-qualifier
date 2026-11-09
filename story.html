@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E0E0F">
+<script>/* pick the layout before first paint: phones read top to bottom, larger screens get slides. ?mode=read or ?mode=slides overrides. */
+document.documentElement.className += (function () { var m = /[?&]mode=(read|slides)/.exec(location.search); return (m ? m[1] === 'read' : Math.min(innerWidth, innerHeight) < 600) ? ' read' : ' slides'; })();</script>
+<title>UCLuster Too Qualifier · 5-minute version</title>
+<!-- UCLuster Too · CIUK Cluster Challenge 2026 qualifier pitch. Built on the house deck (hackathon design system).
+     Keys: → / Space / click right half = next, ← / click left half = back, Home / End, F = full screen, N = speaker notes.
+     #5 in the URL opens slide 5. Print to PDF gives one slide per page.
+     Every number comes from the three team repos (latest commits, 8 Nov 2026); each slide names its source files. -->
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,300..700&family=Google+Sans+Code:wght@400;500&display=swap">
+<link rel="stylesheet" href="house.css">
+<link rel="stylesheet" href="deck.css">
+<style>
+.trap{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;border-radius:var(--r-xl);overflow:hidden;max-width:1620px}
+.trap>div{background:var(--panel);padding:22px 30px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.trap>div:last-child{background:var(--surface-2)}
+.trap span{font-size:18px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--soft)}
+.trap>div:last-child span{color:var(--accent)}
+.trap p{font-size:28px;line-height:1.3;color:var(--muted)}
+.trap>div:last-child p{color:var(--ink)}
+.ask{display:flex;align-items:baseline;gap:24px}
+.ask span{font-size:20px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--soft)}
+.ask p{font-size:44px;color:var(--accent);letter-spacing:-.01em}
+.trap.col{grid-template-columns:1fr}
+.trap.col>div{padding:18px 26px}
+.trap.col p{font-size:26px}
+html.read .trap{grid-template-columns:1fr}
+</style>
+</head>
+<body>
+<!--
+  5-MINUTE VERSION of index.html. Slides 1 to 9 are the talk (about 520 spoken words).
+  Slide 10 is a divider, and 11 to 24 are the detail slides from index.html, unchanged, as backup for questions.
+  The page editor (?edit) and tools/check.py only cover index.html, so edit this file by hand.
+
+   1 Title                  4 HPCG on half the cores   7 First model flagged no one
+   2 Three separate tasks   5 Grid is memory-limited   8 Only age beats chance
+   3 HPL, 1 vs 4 nodes      6 Thread placement         9 A check changed each first answer
+-->
+<div class="stage" id="stage">
+  <!-- ===================== 5-MINUTE STORY (slides 1–9) ===================== -->
+
+  <!-- S1. Title -->
+  <section class="dk">
+    <span class="t-eyebrow rise">CIUK Cluster Challenge 2026 · Qualifier rounds</span>
+    <h1 class="brand rise">UCLuster Too</h1>
+    <div class="gline"></div>
+    <p class="t-lead rise" style="color:var(--ink);font-size:52px;max-width:30ch;line-height:1.2;letter-spacing:-.01em">Three challenges, one lesson: check before you believe.</p>
+    <div class="foot rise"><span>Ada Ge · Bobby Ta · Eric Huang · James Loke</span><span>November 2026</span></div>
+    <aside class="notes">We're UCLuster Too.</aside>
+  </section>
+
+  <!-- S2. Three separate tasks -->
+  <section class="dk" style="gap:44px">
+    <h2 class="t-h2">Three machines, three separate tasks</h2>
+    <div class="relay route rise" data-n="3">
+      <div class="rl-track" aria-hidden="true"><span class="rl-line"></span><div class="rl-nodes"><i class="rl-node"></i><i class="rl-node"></i><i class="rl-node"></i></div><span class="rl-pulse"></span></div>
+      <ol class="rl-row">
+        <li class="ag">
+          <div class="rt-h"><span class="rt-n">01</span><b>Edinburgh</b><small>EPCC Cirrus</small></div>
+          <div class="rt-task">Tune the HPL and HPCG benchmarks for speed and energy efficiency on 1 to 4 nodes.</div>
+          <div class="rt-row"><span class="caps2">What we found</span><p style="color:var(--ink)">HPL is most efficient on big problems. HPCG runs just as fast on half the cores.</p></div>
+        </li>
+        <li class="ag">
+          <div class="rt-h"><span class="rt-n">02</span><b>Durham</b><small>DiRAC DINE</small></div>
+          <div class="rt-task">Measure two nodes' compute and memory limits, and see where the Grid physics code sits.</div>
+          <div class="rt-row"><span class="caps2">What we found</span><p style="color:var(--ink)">Grid is limited by memory, not by compute.</p></div>
+        </li>
+        <li class="ag">
+          <div class="rt-h"><span class="rt-n">03</span><b>UCL</b><small>Condenser cloud</small></div>
+          <div class="rt-task">Predict antibiotic resistance from patient records, on a secured cloud server.</div>
+          <div class="rt-row"><span class="caps2">What we found</span><p style="color:var(--ink)">Only age predicts resistance better than chance.</p></div>
+        </li>
+      </ol>
+    </div>
+    <p class="t-lead wide rise">In each one, a simple check changed our first answer.</p>
+    <aside class="notes">We did three separate rounds on three machines: benchmarking in Edinburgh, performance analysis in Durham, and a prediction model at UCL. The tasks were unrelated, but one thing happened in all three: a simple check changed our first answer. We'll show one result and one check from each.</aside>
+  </section>
+
+  <!-- S3. Round 1: scaling at equal energy -->
+  <section class="dk" data-round="1" style="gap:40px">
+    <span class="rtag rise">Round 1 <i></i> Edinburgh</span>
+    <h2 class="t-h2">On HPL, four nodes were 3.6× faster for the same energy</h2>
+    <div class="duo compact rise">
+      <div><span class="label" style="font-size:28px">1 node</span><span class="bignum">11:19</span><span>minutes to solve</span>
+        <div class="kv"><div>Energy used<b>0.815 MJ</b></div><div>Efficiency<b>12.8 GFLOPS/W</b></div></div></div>
+      <div><span class="label" style="font-size:28px;color:var(--accent)">4 nodes</span><span class="bignum">3:07</span><span>minutes to solve</span>
+        <div class="kv"><div>Energy used<b>0.815 MJ</b></div><div>Efficiency<b style="color:var(--ok)">12.8 GFLOPS/W</b></div></div></div>
+    </div>
+    <div class="trap rise">
+      <div><span>First we thought</span><p>our efficiency figures were right.</p></div>
+      <div><span>Then we checked</span><p>what the formula divided by.</p></div>
+      <div><span>It was actually</span><p>flattering short runs: the solve's work over the whole job's power. We fixed it.</p></div>
+    </div>
+    <div class="srcl">HPL, N = 250,000, 1 vs 4 Cirrus nodes, both PASSED. Jobs 571593 and 571373. Efficiency = solve work ÷ whole-job energy. Data from hpl/results/SUMMARY.md.</div>
+    <aside class="notes">In Edinburgh we tuned two benchmarks, HPL and HPCG, for speed and energy efficiency. HPL solves one huge set of equations. The biggest lever was problem size: bigger problems are more efficient. At our largest size, four nodes solved it 3.6 times faster for the same energy. The check here was our own formula. It divided the solve's work by the whole job's power, which flattered short runs. Once we fixed it, the numbers made sense.</aside>
+  </section>
+
+  <!-- S4. Round 1: half the cores -->
+  <section class="dk" data-round="1" style="gap:36px">
+    <h2 class="t-h2">HPCG ran just as fast with half the cores switched off</h2>
+    <div class="nodes2 rise">
+      <div>
+        <span class="label">All 288 cores working</span>
+        <div class="cores" data-pattern="all" aria-label="All 288 cores in use"></div>
+        <div class="kv"><div>Speed<b>133.7 GFLOPS</b></div><div>Power<b>1,050 W</b></div></div>
+      </div>
+      <div>
+        <span class="label" style="color:var(--accent)">Only 144 cores working</span>
+        <div class="cores" data-pattern="half" aria-label="144 of 288 cores in use"></div>
+        <div class="kv"><div>Speed<b>134.5 GFLOPS</b></div><div>Power<b style="color:var(--ok)">977 W</b></div></div>
+      </div>
+    </div>
+    <p class="t-lead wide rise">HPCG is limited by memory, not by cores. The extra cores only cost power, so leaving them idle gave 8% better efficiency.</p>
+    <div class="srcl">HPCG, 30-minute VALID runs, 288 × 1 vs 144 × 2 ranks (jobs 570229, 571314): +8% GFLOPS per watt. Data from hpcg/results/SUMMARY.md.</div>
+    <aside class="notes">HPCG is the opposite kind of benchmark: it mostly reads data from memory. When we ran it on half the cores, it went just as fast and used 7% less power. If removing half the workers doesn't slow you down, the workers aren't the bottleneck. Memory is. So our most efficient HPCG run left half the node idle: 8% better efficiency.</aside>
+  </section>
+
+  <!-- S5. Round 2: roofline -->
+  <section class="dk" data-round="2" style="gap:36px">
+    <span class="rtag rise">Round 2 <i></i> Durham</span>
+    <h2 class="t-h2">Grid, a physics code, is limited by memory, not by compute</h2>
+    <div class="rise" style="display:grid;grid-template-columns:940px 1fr;gap:64px;align-items:center">
+      <svg class="chart" id="roofline" viewBox="0 0 1000 640" role="img" aria-label="Roofline for the two Durham nodes. Grid's points sit far to the left, on the slope where memory bandwidth sets the speed."></svg>
+      <div class="facts2">
+        <div><b>~2</b>FLOPs per byte fetched from memory. The nodes need 15 to 23 to keep their cores busy.</div>
+        <div><b>61–71%</b>of the memory-bandwidth limit reached, so Grid uses memory well.</div>
+        <div><b>Compute</b>isn't the limit. Moving data is.</div>
+      </div>
+    </div>
+    <div class="srcl">Grid on DINE and DINE2. Ceilings from likwid-bench (FP32 peak, triad); Grid intensity 1.57 and 2.08 FLOP/byte from likwid-perfctr, whole process. Data from ceilings.csv and report/report.tex.</div>
+    <aside class="notes">In Durham we measured two nodes' limits with LIKWID: how fast they can calculate, and how fast they can move data from memory. Then we ran Grid, a physics code. Grid does about 2 calculations for every byte it fetches. The nodes need 15 to 23 to keep their cores busy. So Grid is limited by memory, and it reaches 61 to 71% of that limit.</aside>
+  </section>
+
+  <!-- S6. Round 2: thread placement -->
+  <section class="dk" data-round="2" style="gap:40px">
+    <h2 class="t-h2">Clang looked faster than GCC. It was really thread placement.</h2>
+    <div class="rise" style="display:grid;grid-template-columns:900px 1fr;gap:72px;align-items:center">
+      <div class="stack" style="--gap:30px">
+        <div class="sockwrap"><h3><span class="mk bad">✕</span>Default: neighbouring threads split across the two sockets</h3><svg class="chart sock bad" data-mode="close" viewBox="0 0 900 236" role="img" aria-label="Default placement. Threads 0 to 7 alternate between the two sockets."></svg></div>
+        <div class="sockwrap"><h3><span class="mk ok">✓</span>Fixed: neighbours share a socket</h3><svg class="chart sock ok" data-mode="ordered" viewBox="0 0 900 236" role="img" aria-label="Fixed placement. Threads 0 to 7 sit on the same socket."></svg></div>
+      </div>
+      <div class="stack" style="--gap:28px">
+        <div><span class="bignum" style="font-size:130px;color:var(--accent)">+<span data-count data-from="0" data-to="58">58</span>%</span></div>
+        <div class="trap col">
+          <div><span>First we thought</span><p>Clang beat GCC.</p></div>
+          <div><span>Then we checked</span><p>where each one placed its threads.</p></div>
+          <div><span>It was actually</span><p>placement. Fixed, the gap went away.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="srcl">DINE2, OMP_PROC_BIND=close vs OMP_PLACES={0}:32:2,{1}:32:2, L = 24. Data from report/report.tex and analysis/data/tuning_summary.csv.</div>
+    <aside class="notes">Early on, Clang looked faster than GCC on one node. Then we checked where each one put its threads. That node numbers its cores even on one socket and odd on the other, so the default setting split neighbouring threads across sockets. Fixing the placement gave up to 58%, and the compiler gap went away. Before blaming one thing, check what else changed.</aside>
+  </section>
+
+  <!-- S7. Round 3: model selection -->
+  <section class="dk" data-round="3" style="gap:40px">
+    <span class="rtag rise">Round 3 <i></i> UCL</span>
+    <h2 class="t-h2">Our first model was 76% accurate, and caught no one</h2>
+    <div class="duo compact rise">
+      <div><span class="label" style="font-size:28px">First model</span><span class="bignum bad"><span data-count data-from="60" data-to="0">0</span> <span style="font-size:.4em;color:var(--soft)">of 60</span></span><span>resistant patients flagged</span></div>
+      <div><span class="label" style="font-size:28px;color:var(--accent)">After the fix</span><span class="bignum"><span data-count data-from="0" data-to="39">39</span> <span style="font-size:.4em;color:var(--soft)">of 60</span></span><span>resistant patients flagged</span></div>
+    </div>
+    <div class="trap rise">
+      <div><span>First we thought</span><p>76% accuracy meant a good model.</p></div>
+      <div><span>Then we checked</span><p>who it actually flagged.</p></div>
+      <div><span>It was actually</span><p>saying everyone was fine. Only 1 in 4 patients is resistant.</p></div>
+    </div>
+    <div class="srcl">Synthetic data, 1,000 patients. Test set of 250 (60 resistant). First model ranked by ROC AUC; fix = class weights + balanced accuracy. Data from outputs/model_comparison.csv.</div>
+    <aside class="notes">At UCL we built models to predict antibiotic resistance, on synthetic patient data, on a locked-down server. Only one patient in four is resistant. Our first model was 76% accurate. First we thought that was good. Then we checked who it flagged: nobody. It just said everyone was fine. We changed how we scored models, and the fixed one caught 39 of 60.</aside>
+  </section>
+
+  <!-- S8. Round 3: risk factors -->
+  <section class="dk" data-round="3" style="gap:40px">
+    <h2 class="t-h2">Only age predicts resistance better than chance</h2>
+    <div class="rise" style="display:grid;grid-template-columns:1fr 470px;gap:80px;align-items:end">
+      <div class="stack" style="--gap:10px">
+        <div class="nz">
+          <div class="nz-row ok" style="--a:.708;--n:.540;--k:0"><span>Age</span><span class="nz-t"><i class="band"></i><i class="dot"></i></span><b>0.71</b><span class="mk ok">✓</span></div>
+          <div class="nz-row" style="--a:.537;--n:.551;--k:1"><span>Deprivation</span><span class="nz-t"><i class="band"></i><i class="dot"></i></span><b>0.54</b><span class="mk bad">✕</span></div>
+          <div class="nz-row" style="--a:.522;--n:.535;--k:2"><span>Sex</span><span class="nz-t"><i class="band"></i><i class="dot"></i></span><b>0.52</b><span class="mk bad">✕</span></div>
+          <div class="nz-row" style="--a:.506;--n:.543;--k:3"><span>Ethnicity</span><span class="nz-t"><i class="band"></i><i class="dot"></i></span><b>0.51</b><span class="mk bad">✕</span></div>
+          <div class="nz-row ctl" style="--a:.480;--n:.540;--k:4"><span>Random numbers</span><span class="nz-t"><i class="band"></i><i class="dot"></i></span><b>0.48</b><span class="mk bad">✕</span></div>
+        </div>
+        <div class="nz-ax"><span>Grey band: what shuffled, meaningless data scores</span><span><em style="left:16.67%">0.50 chance</em><em style="left:50%">0.60</em><em style="left:83.33%">0.70</em></span><span></span><span></span></div>
+      </div>
+      <div class="stack" style="--gap:22px">
+        <span class="label" style="font-size:22px">Share resistant, by age</span>
+        <div class="agebars">
+          <div style="--v:8.4;--k:0"><b>8%</b><i></i><span>20–40</span></div>
+          <div style="--v:25.9;--k:1"><b>26%</b><i></i><span>41–60</span></div>
+          <div style="--v:37.5;--k:2"><b>38%</b><i></i><span>61–70</span></div>
+          <div style="--v:40.7;--k:3"><b>41%</b><i></i><span>71–79</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="t-lead wide rise">Deprivation had looked important, until a column of random numbers scored higher on the same measure. So we chose a simple tree a doctor can read, which did as well as the random forest.</p>
+    <div class="srcl">Synthetic data. Dots: 5-fold cross-validated ROC AUC of each factor alone, against 100 shuffled copies. Data from outputs/risk_factors_summary.txt and notes/2026-10-29-risk-factors.md.</div>
+    <aside class="notes">To find what really matters, we compared every factor against shuffled copies of itself, plus a column of random numbers. Only age beat chance: resistance goes from 8% at 20 to 40, to 41% over 70. Deprivation had looked important, until the random numbers scored higher on the same measure. So we picked a simple tree a doctor can read, which did as well as the complex model.</aside>
+  </section>
+
+  <!-- S9. Lesson -->
+  <section class="dk" style="gap:48px">
+    <h2 class="t-h2">In all three rounds, a simple check changed our first answer</h2>
+    <div class="tbl rise">
+      <div class="th"><span>Round</span><span>First we thought</span><span>Then we checked</span><span>It was actually</span></div>
+      <div><span><b>Edinburgh</b></span><span>Our efficiency figures were right</span><span>What the formula divided by</span><span>It flattered short runs</span></div>
+      <div><span><b>Durham</b></span><span>Clang beat GCC</span><span>Where each placed its threads</span><span>Thread placement</span></div>
+      <div><span><b>UCL</b></span><span>Deprivation raises the risk</span><span>Against random numbers</span><span>Noise. Only age is real.</span></div>
+    </div>
+    <p class="t-lead wide rise" style="color:var(--ink)">Each time, the first answer came from how we measured, not from the machine or the patients. A simple check caught it.</p>
+    <div class="foot rise" style="font-size:22px"><span>UCLuster Too · Ada Ge, Bobby Ta, Eric Huang, James Loke</span><span>Backup slides follow</span></div>
+    <aside class="notes">The three tasks were unrelated, but the same thing happened in each. Our first answer came from how we measured, not from the machine or the patients. And each time, a simple check caught it. That's what we'd take to the finals. Thank you.</aside>
+  </section>
+
+  <!-- Backup divider -->
+  <section class="dk" style="gap:48px">
+    <span class="rtag rise">Backup</span>
+    <h2 class="t-h op">Detail slides for questions</h2>
+    <p class="t-lead rise">Full numbers, methods and sources for each round.</p>
+  </section>
+
+  <!-- ===================== BACKUP (original slides) ===================== -->
+
+  <!-- B3. original slide 3 -->
+  <section class="dk" data-round="1" style="gap:48px">
+    <span class="rtag rise">Round 1 <i></i> EPCC Cirrus <i></i> Edinburgh</span>
+    <h2 class="t-h op">HPL and HPCG on 1 to 4 Cirrus nodes, scored on throughput and energy efficiency</h2>
+    <div class="facts rise">
+      <div><b>2 × EPYC 9825</b><span>AMD processors per node</span></div>
+      <div><b>288</b><span>cores per node</span></div>
+      <div><b>24 × 12</b><span>chiplets (CCDs) of 12 cores each</span></div>
+      <div><b>8 × 36</b><span>NUMA domains of 36 cores</span></div>
+    </div>
+    <div class="marks rise">
+      <span class="label">Marking scheme (out of 100)</span>
+      <div class="mbar"><i class="hi" style="--w:25"><b>25</b>HPL GFLOPS per watt</i><i class="hi" style="--w:25"><b>25</b>HPCG GFLOPS per watt</i><i style="--w:20"><b>20</b>Scaling, 1 to 4 nodes</i><i style="--w:30"><b>30</b>Presentation</i></div>
+    </div>
+    <div class="srcl">Brief summarised in notes/epcc-week1-rundown.md (UCL repository). Energy from Slurm ConsumedEnergyRaw. Every job ran with <b>--exclusive</b>.</div>
+    <aside class="notes">Each Cirrus node has two 144-core AMD EPYC 9825 processors. The cores are grouped into 24 chiplets of 12 cores, and Slurm exposes 8 NUMA domains. Half of the marks were for GFLOPS per watt. Every run therefore recorded energy from Slurm’s counters as well as GFLOPS.</aside>
+  </section>
+
+  <!-- B4. original slide 4 -->
+  <section class="dk" data-round="1" style="gap:34px">
+    <h2 class="t-h2">On one node, problem size accounted for most of the HPL improvement and compiler flags for almost none</h2>
+    <div class="levers rise">
+      <div class="lv" style="--k:0"><span class="lv-l">Problem size N<small>99,840 → 278,784 · 10% → 80% of memory</small></span><span class="lv-t"><i style="--v:48"></i></span><b>+48%</b></div>
+      <div class="lv" style="--k:1"><span class="lv-l">One MPI rank per chiplet<small>24 ranks × 12 threads instead of 8 × 36</small></span><span class="lv-t"><i style="--v:13"></i></span><b>+13%</b></div>
+      <div class="lv" style="--k:2"><span class="lv-l">Broadcast algorithm<small>BCAST 3 instead of the default 1</small></span><span class="lv-t"><i style="--v:4"></i></span><b>+4%</b></div>
+      <div class="lv off" style="--k:3"><span class="lv-l">Compiler flags<small>Cray -O2, -O3, -Ofast, -flto</small></span><span class="lv-t"><i style="--v:2"></i></span><b>≤2%</b></div>
+      <div class="lv off" style="--k:4"><span class="lv-l">CPU frequency cap<small>1.5, 1.8 and 2.2 GHz (not applied under load)</small></span><span class="lv-t"><i style="--v:0"></i></span><b>0%</b></div>
+    </div>
+    <p class="t-lead wide rise">HPL work grows as N³ while setup and communication grow as N². Over 95% of runtime is DGEMM inside Cray LibSci, which compiler flags do not change.</p>
+    <div class="srcl">HPL GFLOPS on one node, with each comparison made on a single node. Data from hpl/results/HPL_RESULTS.md, jobs 563364, 570197, 570191, 570247, 570203 and 570265.</div>
+    <aside class="notes">We tested five HPL parameters on one node. Problem size had by far the largest effect, because computation grows faster than overhead as N increases. Placing one MPI rank on each 12-core chiplet added 13%. Compiler flags made no measurable difference, since almost all of the time is spent inside the vendor DGEMM. The frequency cap was set but not honoured under load, so we cannot say whether a lower clock would have saved energy.</aside>
+  </section>
+
+  <!-- B6. original slide 6 -->
+  <section class="dk" data-round="1">
+    <h2 class="t-h2">On one node, HPCG delivered under 1% of HPL’s GFLOPS at a similar power draw</h2>
+    <div class="duo rise">
+      <div><span class="label" style="font-size:28px">HPL · dense solve</span><span class="bignum"><span data-count data-from="0" data-to="15345">15,345</span></span><span>GFLOPS at 1,154 W average</span></div>
+      <div><span class="label" style="font-size:28px">HPCG · sparse solve</span><span class="bignum bad"><span data-count data-from="15345" data-to="134.5" data-dec="1">134.5</span></span><span>GFLOPS at 977 W average</span></div>
+    </div>
+    <p class="t-lead wide rise">HPL spends its time in dense matrix multiply, which reuses each operand many times from cache. HPCG spends its time in sparse matrix-vector products and a Gauss-Seidel smoother, which use most values once before moving on.</p>
+    <div class="srcl">HPL job 571593 (N = 250,000). HPCG job 571314 (30-minute VALID run, 144 ranks × 2 cores). The GFLOPS ratio is 114 and the GFLOPS per watt ratio is 93. Data from hpl/results/SUMMARY.md and hpcg/results/SUMMARY.md.</div>
+    <aside class="notes">Both benchmarks ran on the same node type at a similar power draw. HPCG delivered 114 times fewer GFLOPS. The two codes do very different work per byte loaded. Dense matrix multiply reuses data from cache. Sparse kernels read each value and move on. Our expectation was that HPCG is limited by memory, and the next slide is how we tested that on Cirrus.</aside>
+  </section>
+
+  <!-- B8. original slide 8 -->
+  <section class="dk" data-round="1" style="gap:48px">
+    <h2 class="t-h2">Round 1 results, and the workflow changes we made before round 2</h2>
+    <div class="cols rise" style="grid-template-columns:1.12fr 1fr;gap:48px;align-items:stretch">
+      <div class="tiles">
+        <div><span class="label">HPL · 1 node · most efficient</span><span class="n"><span data-count data-from="0" data-to="12.79" data-dec="2">12.79</span><small>GFLOPS/W</small></span><span class="m">15,345 GFLOPS · job 571593</span></div>
+        <div><span class="label">HPL · 4 nodes · fastest</span><span class="n"><span data-count data-from="0" data-to="55805">55,805</span><small>GFLOPS</small></span><span class="m">12.78 GFLOPS/W · job 571373</span></div>
+        <div><span class="label">HPCG · 1 node · most efficient</span><span class="n"><span data-count data-from="0" data-to="0.1376" data-dec="4">0.1376</span><small>GFLOPS/W</small></span><span class="m">134.5 GFLOPS · 30 min VALID · job 571314</span></div>
+        <div><span class="label">HPCG · 4 nodes · fastest</span><span class="n"><span data-count data-from="0" data-to="531.8" data-dec="1">531.8</span><small>GFLOPS</small></span><span class="m">99% of 1-node speed per node · job 570231</span></div>
+      </div>
+      <div class="chg">
+        <div><span class="mk ok">✓</span><span class="now">Run a recon job before any benchmark</span><span class="was"><s>Learned the hardware from our results</s></span></div>
+        <div><span class="mk ok">✓</span><span class="now">Choose layouts from the topology, then test them</span><span class="was"><s>Swept layouts without a hypothesis</s></span></div>
+        <div><span class="mk ok">✓</span><span class="now">One parameterised script with job arrays</span><span class="was"><s>A new script for each experiment</s></span></div>
+        <div><span class="mk ok">✓</span><span class="now">Every job writes its own results row</span><span class="was"><s>Tables assembled by hand afterwards</s></span></div>
+      </div>
+    </div>
+    <div class="srcl">All HPL runs PASSED the residual check. All HPCG finals were VALID with at least 1,800 s of benchmark time. Data from CIUK-UCLusters/README.md and hpcg/README.md. Workflow changes from notes/epcc-week1-rundown.md.</div>
+    <aside class="notes">These are the four headline results. Every HPL run passed the residual check and every HPCG final was valid and at least 30 minutes long. The right side lists what we changed in how we worked. In round 1 we learned the machine from our own results and swept layouts without a hypothesis. From round 2 onwards we ran a recon job first, chose layouts from the topology, and had every job record its own results.</aside>
+  </section>
+
+  <!-- B9. original slide 9 -->
+  <section class="dk" data-round="2" style="gap:48px">
+    <span class="rtag rise">Round 2 <i></i> DiRAC <i></i> Durham <i></i> 19–23 Oct</span>
+    <h2 class="t-h op">Measured compute and bandwidth ceilings on two DiRAC nodes, and where Grid sits relative to them</h2>
+    <div class="nodecards rise">
+      <div><span class="label" style="font-size:22px">Node 1</span><b>DINE</b><p>2 × AMD EPYC 7302 (Zen 2) · 32 cores · DDR4 · AVX2</p></div>
+      <div><span class="label" style="font-size:22px">Node 2</span><b>DINE2</b><p>2 × Intel Xeon Gold 6430 (Sapphire Rapids) · 64 cores · DDR5 · AVX-512</p></div>
+    </div>
+    <div class="marks rise">
+      <span class="label">Marking scheme (out of 100)</span>
+      <div class="mbar"><i class="hi" style="--w:20"><b>20</b>LIKWID · DINE</i><i class="hi" style="--w:20"><b>20</b>LIKWID · DINE2</i><i style="--w:10"><b>10</b>Node vs node</i><i style="--w:10"><b>10</b>Grid · DINE</i><i style="--w:10"><b>10</b>Grid · DINE2</i><i style="--w:10"><b>10</b>Grid vs LIKWID</i><i style="--w:10"><b>10</b>Best case</i><i style="--w:10"><b>10</b>Time use</i></div>
+    </div>
+    <div class="srcl">Scoring from Durham_Cluster_Challenge_2026.pdf, section 7. Hardware from report/report.tex, table 1. Recon jobs 12198164 (DINE) and 12202855 (DINE2) ran before any benchmark.</div>
+    <aside class="notes">The Durham brief asked how close each node gets to its vendor specification, and where the Grid lattice QCD benchmark sits between the compute and bandwidth limits. That was the measurement we had been missing on Cirrus. The two nodes differ in vendor and in core count, which made the comparison useful.</aside>
+  </section>
+
+  <!-- B10. original slide 10 -->
+  <section class="dk" data-round="2" style="gap:30px">
+    <h2 class="t-h2">Both nodes met their compute specification, but measured bandwidth reached only 56% and 71% of the memory specification</h2>
+    <div class="stack rise" style="--gap:18px">
+      <div class="cl-head"><span>Measured with likwid-bench, full node</span><span><em>spec</em></span><span style="text-align:right">vs spec</span></div>
+      <div class="ceil">
+        <div class="cl" style="--k:0"><span class="cl-l">DINE · FP32 compute<small>3,341 of 3,072 GFLOP/s at base clock</small></span><span class="cl-t"><i style="--v:109"></i></span><b>109%</b></div>
+        <div class="cl" style="--k:1"><span class="cl-l">DINE2 · FP32 compute<small>9,287 of 8,602 GFLOP/s at base clock</small></span><span class="cl-t"><i style="--v:108"></i></span><b>108%</b></div>
+        <div class="cl mem" style="--k:2"><span class="cl-l">DINE · memory bandwidth<small>231 of 410 GB/s</small></span><span class="cl-t"><i style="--v:56"></i></span><b>56%</b></div>
+        <div class="cl mem" style="--k:3"><span class="cl-l">DINE2 · memory bandwidth<small>398 of 563 GB/s</small></span><span class="cl-t"><i style="--v:71"></i></span><b>71%</b></div>
+      </div>
+    </div>
+    <p class="t-lead wide rise">The ratio of the two measured ceilings is the ridge point. Below about 14.5 FLOPs per byte on DINE and 23.3 on DINE2, memory sets the speed.</p>
+    <div class="srcl">Medians of 3 runs of peakflops_sp (AVX or AVX-512 FMA) and triad_mem (non-temporal stores). Compute spec is sockets × cores × base GHz × FLOP per cycle. Memory spec assumes the rated DIMM speed, which we could not verify. Data from analysis/overnight-20261022T224854Z/ceilings.csv and report/report.tex.</div>
+    <aside class="notes">LIKWID’s peak FLOP kernel slightly exceeded the base-clock specification on both nodes, which we attribute to turbo. Measured memory bandwidth reached 56% of the specification on DINE and 71% on DINE2. Dividing the two measured ceilings gives the ridge point. Any code below about 15 FLOPs per byte on DINE, or 23 on DINE2, is limited by memory.</aside>
+  </section>
+
+  <!-- B13. original slide 13 -->
+  <section class="dk" data-round="2" style="gap:36px">
+    <h2 class="t-h2">Grid strong scaling is sublinear on both nodes, and less efficient on the node with less bandwidth per core</h2>
+    <div class="rise" style="display:grid;grid-template-columns:940px 1fr;gap:64px;align-items:center">
+      <svg class="chart" id="scaling" viewBox="0 0 1000 620" role="img" aria-label="Strong scaling at L = 32. DINE reaches 17.2 times its one-thread speed on 32 threads. DINE2 reaches 21.4 times on 64 threads. Both are well below the ideal line."></svg>
+      <div class="facts2">
+        <div><b>17.2× <em>on 32 threads</em></b>DINE at L = 32, a parallel efficiency of 54%</div>
+        <div><b>21.4× <em>on 64 threads</em></b>DINE2 at L = 32, a parallel efficiency of 34%</div>
+        <div><b>7.2 <em>vs</em> 6.2 GB/s</b>measured bandwidth per core on DINE and DINE2</div>
+      </div>
+    </div>
+    <div class="srcl">FP32 domain-wall kernel at fixed lattice size, medians of 3, one build and placement per node. The trend is consistent with threads sharing memory bandwidth, but the curves alone cannot isolate the cause. In weak scaling (L24 on 2 threads to L48 on 32) DINE kept 56% of per-thread throughput and DINE2 kept 32%. Data from analysis/overnight-20261022T224854Z/SUMMARY.md.</div>
+    <aside class="notes">Both nodes keep getting faster with more threads, but well below the ideal line. DINE reaches 17 times on 32 threads and DINE2 reaches 21 times on 64. DINE2 has twice the cores of DINE but only 1.7 times the bandwidth, so each core has less bandwidth available. That matches the lower efficiency, and it is what a bandwidth-bound code should show. We say consistent with rather than caused by, because a scaling curve alone cannot separate bandwidth from synchronisation or placement effects.</aside>
+  </section>
+
+  <!-- B14. original slide 14 -->
+  <section class="dk" data-round="2" style="gap:38px">
+    <h2 class="t-h2">Round 2 applied the round 1 workflow changes and produced one rule for round 3</h2>
+    <div class="cols" style="gap:72px;align-items:start">
+      <div class="stack rise" style="--gap:28px">
+        <div class="bigrow"><div><b><span data-count data-from="0" data-to="205">205</span></b>jobs by Friday 01:30</div><div><b>28.5</b>node-hours</div><div><b>95<span style="font-size:48px;color:var(--soft)">/97</span></b>overnight runs succeeded</div></div>
+        <ul class="real">
+          <li><span class="mk ok">✓</span>Recon jobs on both nodes before any benchmark</li>
+          <li><span class="mk ok">✓</span>One submit script, with the array index as the thread count</li>
+          <li><span class="mk ok">✓</span>Each run stores its git hash, modules, build flags and host</li>
+          <li><span class="mk ok">✓</span>Repeats submitted as separate jobs, so error bars include node variation</li>
+          <li><span class="mk ask">?</span>Early DINE2 LIKWID runs were pinned incorrectly and were excluded</li>
+        </ul>
+      </div>
+      <div class="card lg rise stack" style="--gap:24px;padding:44px">
+        <span class="caps2" style="font-size:18px">Rule carried into round 3</span>
+        <p style="font-size:36px;line-height:1.22;letter-spacing:-.012em">Before attributing a difference to one factor, check what else differed between the runs.</p>
+        <p style="font-size:25px;color:var(--soft);line-height:1.4">We never combined runs from different builds or placements in one scaling curve, even when the configuration labels matched.</p>
+      </div>
+    </div>
+    <div class="srcl">205 jobs, 178 completed and 28.5 node-hours as of Friday 01:30. The overnight campaign 20261022T224854Z recorded 97 runs, 95 successful, with every raw record kept. The two counts are separate snapshots. Data from report/report.tex, README.md and docs/submission-review.md.</div>
+    <aside class="notes">The round 1 workflow changes paid off. We submitted 205 jobs by Friday morning, and each recorded its build flags, modules and host. An overnight campaign of 97 Grid runs kept every raw record. When we found that early DINE2 LIKWID runs had been pinned incorrectly, we excluded them. The placement result gave us a rule for round 3. Before attributing a difference to one factor, check what else differed between the runs.</aside>
+  </section>
+
+  <!-- B15. original slide 15 -->
+  <section class="dk" data-round="3" style="gap:48px">
+    <span class="rtag rise">Round 3 <i></i> UCL Condenser <i></i> Cloud <i></i> 26–30 Oct</span>
+    <h2 class="t-h op">Tree models for co-amoxiclav resistance, run on a shared cloud VM</h2>
+    <div class="facts rise">
+      <div><b>1,000</b><span>synthetic patient records with E. coli infections</span></div>
+      <div><b>24.1%</b><span>resistant to co-amoxiclav</span></div>
+      <div><b>20 to 79</b><span>the only ages present in the data</span></div>
+      <div><b>17.6%</b><span>White patients, against 81.7% in the 2021 Census</span></div>
+    </div>
+    <div class="marks rise">
+      <span class="label">Marking scheme (out of 100)</span>
+      <div class="mbar"><i class="hi" style="--w:20"><b>20</b>Python script</i><i style="--w:10"><b>10</b>ReadMe</i><i style="--w:10"><b>10</b>Permissions</i><i style="--w:10"><b>10</b>VM + env</i><i class="hi" style="--w:35"><b>35</b>5-minute video</i><i style="--w:15"><b>15</b>Teamwork</i></div>
+    </div>
+    <div class="srcl"><span class="synthetic">Synthetic data</span>&nbsp; Modelled on UK Health Security Agency data. The VM had no root access and no git, and was reachable only through UCL’s JupyterHub. Census figure is ONS 2021, England and Wales. Data from UCL_Challenge_Updated.pdf and notes/2026-10-25-data-first-look.md.</div>
+    <aside class="notes">The UCL brief asked which tree model best identifies patients at risk of co-amoxiclav resistance, and what the main risk factors are. The data is synthetic. It is also not representative. It contains only adults aged 20 to 79, and White patients make up 17.6% of records against about 82% of the population. Any model trained on it may not generalise to the real population.</aside>
+  </section>
+
+  <!-- B18. original slide 18 -->
+  <section class="dk" data-round="3" style="gap:40px">
+    <h2 class="t-h2">All competitive models were within one standard deviation, so we chose the tree a clinician can read</h2>
+    <div class="rise" style="display:grid;grid-template-columns:820px 1fr;gap:80px;align-items:center">
+      <svg class="chart tree" viewBox="0 0 820 520" role="img" aria-label="The final depth-3 tree. Under 49 is lower risk. 65 or over is flagged. 49 to 61 is flagged. 62 to 64 is lower risk, probably noise.">
+        <g style="--k:.55s"><path class="ed" d="M410 82 C410 130 130 120 130 160"/><path class="ed" d="M410 82 C410 130 580 120 580 160"/><text class="el" x="232" y="128">under 49</text><text class="el" x="520" y="128">49+</text></g>
+        <g style="--k:.95s"><path class="ed" d="M580 232 C580 280 430 270 430 310"/><path class="ed" d="M580 232 C580 280 700 270 700 310"/><text class="el" x="452" y="280">49–64</text><text class="el" x="660" y="280">65+</text></g>
+        <g style="--k:1.35s"><path class="ed" d="M430 382 C430 430 300 420 300 440"/><path class="ed" d="M430 382 C430 430 560 420 560 440"/><text class="el" x="300" y="420">49–61</text><text class="el" x="516" y="420">62–64</text></g>
+        <g class="nd" style="--k:.3s"><rect x="290" y="10" width="240" height="72" rx="18"/><text x="410" y="55" text-anchor="middle">Age 49 or over?</text></g>
+        <g class="lf low" style="--k:.75s"><rect x="20" y="160" width="220" height="72" rx="18"/><text x="130" y="205" text-anchor="middle">Lower risk</text></g>
+        <g class="nd" style="--k:.75s"><rect x="460" y="160" width="240" height="72" rx="18"/><text x="580" y="205" text-anchor="middle">Age 65 or over?</text></g>
+        <g class="nd" style="--k:1.15s"><rect x="310" y="310" width="240" height="72" rx="18"/><text x="430" y="355" text-anchor="middle">Age 62 to 64?</text></g>
+        <g class="lf flag" style="--k:1.15s"><rect x="600" y="310" width="200" height="72" rx="18"/><text x="700" y="355" text-anchor="middle">Flag</text></g>
+        <g class="lf flag" style="--k:1.55s"><rect x="200" y="440" width="200" height="72" rx="18"/><text x="300" y="485" text-anchor="middle">Flag</text></g>
+        <g class="lf unsure" style="--k:1.55s"><rect x="450" y="440" width="220" height="72" rx="18"/><text x="560" y="485" text-anchor="middle">Lower risk ?</text></g>
+      </svg>
+      <div class="stack" style="--gap:22px">
+        <div class="mt">
+          <div><span class="nm">Random forest, depth 3<small>200 trees, not readable as one rule</small></span><b>0.670</b></div>
+          <div><span class="nm">Logistic regression<small>gives odds ratios</small></span><b>0.660</b></div>
+          <div class="pick"><span class="nm">Class-balanced tree, depth 3<small>final model</small></span><b>0.659</b></div>
+          <div class="dimrow"><span class="nm">Plain tree, depth 3<small>flags no one on the test set</small></span><b>0.539</b></div>
+        </div>
+        <p style="font-size:24px;line-height:1.4;color:var(--soft)">Cross-validated balanced accuracy. The forest leads the tree by 0.011, inside one standard deviation (±0.024 to ±0.032). Across four random seeds the balanced tree was always the best single tree, and age always carried over 90% of importance.</p>
+      </div>
+    </div>
+    <div class="srcl"><span class="synthetic">Synthetic data</span>&nbsp; The tree’s deprivation splits never change a prediction, so they are omitted from this drawing. The 62–64 branch is probably noise, since shallower trees score within one standard deviation. Data from outputs/tree_balanced_depth3_age_imd.txt, model_comparison.csv and notes/2026-10-29-model-checks.md.</div>
+    <aside class="notes">The forest and the regression both score within one standard deviation of the class-balanced tree. With no meaningful accuracy difference, we chose the model a clinician can check by hand. The tree’s deprivation splits never change a prediction, so in practice it is an age rule. The 62 to 64 branch is most likely the tree fitting noise. The ranking held across four random seeds.</aside>
+  </section>
+
+  <!-- B19. original slide 19 -->
+  <section class="dk" data-round="3" style="gap:44px">
+    <h2 class="t-h2">The data file arrived world-readable, so we restricted it and our outputs before running any analysis</h2>
+    <div class="rise" style="display:grid;grid-template-columns:960px 1fr;gap:64px;align-items:center">
+      <div class="term" role="img" aria-label="Terminal. The data file starts as rw-r--r--, readable by all users. After moving it into a private folder and chmod 600 it is rw------- and the folder is drwx------.">
+        <div class="tb"><i></i><i></i><i></i><span>cc@condenser-vm · 27 Oct</span></div>
+        <div class="tl" style="--li:0"><span class="p">$</span> ls -l ~/dig_health_hub_amr.csv</div>
+        <div class="tl" style="--li:1"><span class="bd">-rw-r--r--</span>. 1 cc cc 94198 Oct 26 16:44 dig_health_hub_amr.csv</div>
+        <div class="tl" style="--li:2"><span class="p">$</span> mkdir data &amp;&amp; mv ~/dig_health_hub_amr.csv data/</div>
+        <div class="tl" style="--li:3"><span class="p">$</span> chmod 700 data &amp;&amp; chmod 600 data/*.csv</div>
+        <div class="tl" style="--li:4"><span class="p">$</span> ls -ld data; ls -l data</div>
+        <div class="tl" style="--li:5"><span class="gd">drwx------</span>. 2 cc cc    36 Oct 27 09:51 data</div>
+        <div class="tl" style="--li:6"><span class="gd">-rw-------</span>. 1 cc cc 94198 Oct 26 16:44 dig_health_hub_amr.csv</div>
+        <div class="tl" style="--li:7"><span class="cm"># both scripts also set umask 027, so outputs stay private</span></div>
+      </div>
+      <ul class="real" style="font-size:28px">
+        <li><span class="mk ok">✓</span>Access only through JupyterHub and an SSH key</li>
+        <li><span class="mk ok">✓</span>No credentials or IP addresses in the public repository</li>
+        <li><span class="mk ok">✓</span>A virtual environment with only the 3 packages the scripts import</li>
+        <li><span class="mk ok">✓</span>A full run takes 34 s on the VM and matches a laptop run</li>
+        <li><span class="mk ask">?</span>Condenser is not certified for sensitive data, so real records would need further safeguards</li>
+      </ul>
+    </div>
+    <div class="srcl">Permissions recorded on the VM before and after the change in notes/permissions-before.txt and permissions-after.txt. Other details from README.md, src/amr_trees.py, video/script.md and video/teamwork-log.md (27 Oct).</div>
+    <aside class="notes">The data file downloaded as readable by every user on the machine. We recorded that first, then moved it into a private folder and made it readable only by our account. Both scripts set umask 027, so their outputs are private as well. The VM is reached only through JupyterHub and an SSH key, and the public repository holds no credentials. Condenser’s own documentation says it is not certified for sensitive data, so real patient records would need more than this.</aside>
+  </section>
+
+  <!-- B21. original slide 21 -->
+  <section class="dk" style="gap:48px">
+    <h2 class="t-h2">Limitations of these results</h2>
+    <div class="lim rise">
+      <div><span class="caps2">EPCC Cirrus</span>
+        <p>The CPU frequency cap was not applied under HPL load, so the energy effect of lower clocks remains untested.</p>
+        <p>GFLOPS per watt includes setup energy before the timed solve, so all efficiency figures are conservative.</p></div>
+      <div><span class="caps2">DiRAC DINE</span>
+        <p>Counter-based intensity averages over the whole process and cannot be assigned to one Grid kernel.</p>
+        <p>DIMM speeds were not verified, so the memory specification is an upper bound.</p></div>
+      <div><span class="caps2">UCL Condenser</span>
+        <p>The test set holds 60 resistant patients, so model differences below one standard deviation are not meaningful.</p>
+        <p>The data under-represents White patients and covers only ages 20 to 79, so the model may not generalise.</p></div>
+    </div>
+    <aside class="notes">Each round has limits we want to state plainly. On Cirrus, the frequency cap was never applied under load, so we have no evidence either way on lower clocks. On DINE, our intensity numbers come from whole-process counters, and the memory specification assumes DIMM speeds we could not check. For the UCL model, the test set is small and the data is not representative, so the model should not be read as a clinical result.</aside>
+  </section>
+
+  <!-- B22. original slide 22 -->
+  <section class="dk" style="gap:48px">
+    <h2 class="t-h2">Rounds 2 and 3 used four fixed roles, each with a written guide</h2>
+    <div class="cols rise" style="grid-template-columns:auto 1fr;gap:96px;align-items:center">
+      <div class="bigrow"><div><b><span data-count data-from="0" data-to="136">136</span></b>commits</div><div><b>3</b>repositories</div></div>
+      <ul class="real" style="font-size:28px">
+        <li><span class="mk ok">✓</span>Two 15-minute syncs a day in Durham, and an evening check-in at UCL</li>
+        <li><span class="mk ok">✓</span>A log entry for each work session, recording what failed and how we fixed it</li>
+      </ul>
+    </div>
+    <div class="stack rise" style="--gap:14px">
+      <span class="label" style="font-size:22px">Round 3 roles, as described in our UCL video</span>
+      <div class="ppl">
+        <div><span class="av2">AG</span><b>Ada Ge</b><p>Set up the VM environment and ReadMe. Explored the data and chose the evaluation metric.</p></div>
+        <div><span class="av2">BT</span><b>Bobby Ta</b><p>Kept the cloud VM updated. Tested a fresh install from the ReadMe and ran the final checks.</p></div>
+        <div><span class="av2">EH</span><b>Eric Huang</b><p>Tested risk factors against noise and ran the logistic regression. Led the slides and video.</p></div>
+        <div><span class="av2">JL</span><b>James Loke</b><p>Developed the modelling script.</p></div>
+      </div>
+    </div>
+    <div class="srcl">Commits across all branches are 32 in CIUK-UCLusters, 65 in cluster-challenge-durham and 39 in cluster-challenge-ucl. Durham roles and syncs from docs/team-plan.tex. UCL roles from PLAN.md and video/script.md (Q8).</div>
+    <aside class="notes">From round 2 we worked to four fixed roles, with a written guide for each role. In Durham we held two short syncs a day, and at UCL an evening check-in. Every work session left a log entry recording what failed and how we fixed it. The round 3 roles shown here are the ones we described in our UCL video.</aside>
+  </section>
+
+  <!-- B23. original slide 23 -->
+  <section class="dk" style="gap:44px">
+    <h2 class="t-h2">Conclusions</h2>
+    <div class="concl rise">
+      <div><span class="rt-n">01</span><p>HPL efficiency on Cirrus is set mainly by problem size per node. With enough work per node, energy to solution did not change from 1 to 4 nodes.</p></div>
+      <div><span class="rt-n">02</span><p>Grid is bandwidth-bound on both DiRAC nodes, at 61–71% of the memory roof. Thread placement mattered more than the choice of compiler.</p></div>
+      <div><span class="rt-n">03</span><p>Age is the only factor in the UCL dataset that beats a permutation null. A readable depth-3 tree performs within noise of a random forest.</p></div>
+    </div>
+    <div class="stack rise" style="--gap:16px">
+      <span class="label" style="font-size:22px">Code, job logs and analysis scripts</span>
+      <div class="repos row3">
+        <div class="priv"><span>Round 1 · Cirrus · private repository</span><em>BigBouncyBoii/CIUK-UCLusters</em></div>
+        <a href="https://github.com/bobby-ta/cluster-challenge-durham" target="_blank" rel="noopener"><span>Round 2 · DiRAC</span><em>bobby-ta/cluster-challenge-durham</em></a>
+        <a href="https://github.com/Adellama75/cluster-challenge-ucl" target="_blank" rel="noopener"><span>Round 3 · UCL</span><em>Adellama75/cluster-challenge-ucl</em></a>
+      </div>
+    </div>
+    <div class="foot rise" style="font-size:22px"><span>UCLuster Too · Ada Ge, Bobby Ta, Eric Huang, James Loke</span><span>Round 3 data is synthetic. Rounds 1 and 2 are measured runs.</span></div>
+    <aside class="notes">To conclude. On Cirrus, problem size per node set HPL efficiency, and scaling out did not cost energy once each node had enough work. On DINE, Grid is bandwidth-bound, and placement mattered more than the compiler. For the UCL data, age is the only factor that beats a permutation null, and the readable tree performs as well as the forest within noise. The code and logs for each round are in these repositories. The Cirrus one is private and available on request.</aside>
+  </section>
+
+  <div class="chap" id="chap" aria-hidden="true"><span data-r="1"><b>1</b>Edinburgh</span><span data-r="2"><b>2</b>Durham</span><span data-r="3"><b>3</b>UCL</span></div>
+  <div class="bar" id="bar"></div>
+  <div class="count" id="count"></div>
+</div>
+<div class="notes-ov" id="notes" hidden></div>
+<script src="deck.js"></script>
+</body>
+</html>
