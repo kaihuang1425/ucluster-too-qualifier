@@ -1,0 +1,9 @@
+# Only the site files are deployed
+.env*
+.vercel
+.git
+.github
+.gitignore
+.gitattributes
+tools
+*.md

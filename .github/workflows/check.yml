@@ -1,0 +1,33 @@
+name: Check deck
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Playwright with Chromium and WebKit
+        run: |
+          pip install playwright==1.62.0
+          python -m playwright install --with-deps chromium webkit
+
+      - name: Slides fit, numbers match, phones and iPad work
+        run: python tools/check.py
