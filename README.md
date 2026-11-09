@@ -22,7 +22,7 @@ A one-word fix can go straight to `main`. Anything bigger should go through a pu
 ## Edit on your own machine
 
 ```bash
-git clone git@github.com:erichuang1425/ucluster-too-qualifier.git
+git clone git@github.com:kaihuang1425/ucluster-too-qualifier.git
 cd ucluster-too-qualifier
 python -m http.server 8000
 ```
