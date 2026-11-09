@@ -14,7 +14,7 @@ This is the easiest route and needs no setup.
 2. Find your slide by its number. Each slide starts with a comment such as `<!-- 5. Scaling out at constant energy -->`, and the list of all slides is at the top of the file.
 3. Change the words between the tags. Leave `class="..."` and `style="..."` as they are.
 4. Click **Commit changes** and choose **Create a new branch for this commit and start a pull request**.
-5. Open the pull request. The automatic check runs in about three minutes, and Vercel adds a preview link. Vercel protects preview links, so only the repository owner can open them. To see your change yourself, open the page locally (see below) or merge and check the live site.
+5. Open the pull request. The automatic check runs in about three minutes. Vercel also posts a preview link on the pull request within a minute. It shows the deck with your change, and anyone can open it without an account. Look at it on a phone before you merge.
 6. Merge once the check is green. The live site updates by itself.
 
 A one-word fix can go straight to `main`. Anything bigger should go through a pull request so the check runs first.
@@ -100,7 +100,7 @@ It runs on every pull request and every push to `main` through GitHub Actions. I
 
 ## Deployment
 
-The Vercel project `ucluster-too-qualifier` is connected to this repository. Pushes to `main` go to the live site, and every other branch gets its own preview address. Teammates need no Vercel account, because the repository belongs to a personal GitHub account. Preview addresses sit behind Vercel's login, while the live address is public. If a deploy fails, the commit or pull request shows a red Vercel status with a link to the log.
+The Vercel project `ucluster-too-qualifier` is connected to this repository. Pushes to `main` go to the live site, and every other branch gets its own preview address. Teammates need no Vercel account, because the repository belongs to a personal GitHub account. Preview addresses are public like the live address, so anyone with the link can open one. Do not put anything on a branch that should not be seen outside the team. If a deploy fails, the commit or pull request shows a red Vercel status with a link to the log.
 
 ## Where the numbers come from
 
