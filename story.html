@@ -35,13 +35,14 @@ html.read .trap{grid-template-columns:1fr}
 </head>
 <body>
 <!--
-  5-MINUTE VERSION of index.html. Slides 1 to 9 are the talk (about 520 spoken words).
-  Slide 10 is a divider, and 11 to 24 are the detail slides from index.html, unchanged, as backup for questions.
+  5-MINUTE VERSION of index.html. Slides 1 to 10 are the talk (about 560 spoken words).
+  Slide 11 is a divider, and 12 to 24 are detail slides, most of them unchanged from index.html, as backup for questions.
   The page editor (?edit) and tools/check.py only cover index.html, so edit this file by hand.
 
-   1 Title                  4 HPCG on half the cores   7 First model flagged no one
-   2 Three separate tasks   5 Grid is memory-limited   8 Only age beats chance
-   3 HPL, 1 vs 4 nodes      6 Thread placement         9 A check changed each first answer
+   1 Title                  5 HPCG on half the cores    9 UCL: metric and risk factors
+   2 Three separate tasks   6 Node ceilings vs spec    10 A check changed each first answer
+   3 HPL tuning             7 Grid is memory-limited
+   4 HPL, 1 vs 4 nodes      8 Thread placement
 -->
 <div class="stage" id="stage">
   <!-- ===================== 5-MINUTE STORY (slides 1–9) ===================== -->
@@ -70,7 +71,7 @@ html.read .trap{grid-template-columns:1fr}
         <li class="ag">
           <div class="rt-h"><span class="rt-n">02</span><b>Durham</b><small>DiRAC DINE</small></div>
           <div class="rt-task">Measure two nodes' compute and memory limits, and see where the Grid physics code sits.</div>
-          <div class="rt-row"><span class="caps2">What we found</span><p style="color:var(--ink)">Grid is limited by memory, not by compute.</p></div>
+          <div class="rt-row"><span class="caps2">What we found</span><p style="color:var(--ink)">Memory bandwidth falls well short of spec, and it is what limits Grid.</p></div>
         </li>
         <li class="ag">
           <div class="rt-h"><span class="rt-n">03</span><b>UCL</b><small>Condenser cloud</small></div>
@@ -83,9 +84,24 @@ html.read .trap{grid-template-columns:1fr}
     <aside class="notes">We did three separate rounds on three machines: benchmarking in Edinburgh, performance analysis in Durham, and a prediction model at UCL. The tasks were unrelated, but one thing happened in all three: a simple check changed our first answer. We'll show one result and one check from each.</aside>
   </section>
 
-  <!-- S3. Round 1: scaling at equal energy -->
-  <section class="dk" data-round="1" style="gap:40px">
+  <!-- S3. Round 1: HPL tuning -->
+  <section class="dk" data-round="1" style="gap:34px">
     <span class="rtag rise">Round 1 <i></i> Edinburgh</span>
+    <h2 class="t-h2">HPL: problem size mattered most, compiler flags barely at all</h2>
+    <div class="levers rise">
+      <div class="lv" style="--k:0"><span class="lv-l">Problem size N<small>99,840 → 278,784 · 10% → 80% of memory</small></span><span class="lv-t"><i style="--v:48"></i></span><b>+48%</b></div>
+      <div class="lv" style="--k:1"><span class="lv-l">One MPI rank per chiplet<small>24 ranks × 12 threads instead of 8 × 36</small></span><span class="lv-t"><i style="--v:13"></i></span><b>+13%</b></div>
+      <div class="lv" style="--k:2"><span class="lv-l">Broadcast algorithm<small>BCAST 3 instead of the default 1</small></span><span class="lv-t"><i style="--v:4"></i></span><b>+4%</b></div>
+      <div class="lv off" style="--k:3"><span class="lv-l">Compiler flags<small>Cray -O2, -O3, -Ofast, -flto</small></span><span class="lv-t"><i style="--v:2"></i></span><b>≤2%</b></div>
+      <div class="lv off" style="--k:4"><span class="lv-l">CPU frequency cap<small>1.5, 1.8 and 2.2 GHz (not applied under load)</small></span><span class="lv-t"><i style="--v:0"></i></span><b>0%</b></div>
+    </div>
+    <p class="t-lead wide rise">Speed and efficiency rose together in every test. None of these settings traded one for the other.</p>
+    <div class="srcl">HPL GFLOPS on one node, with each comparison made on a single node. Data from hpl/results/HPL_RESULTS.md, jobs 563364, 570197, 570191, 570247, 570203 and 570265.</div>
+    <aside class="notes">In Edinburgh we tuned HPL and HPCG for energy efficiency. For HPL we changed one setting at a time on one node. Problem size mattered most, because useful work grows faster than overhead. Matching MPI ranks to the chip's 12-core chiplets added 13%. Compiler flags did almost nothing, because the time is spent inside the vendor maths library. Speed and efficiency rose together in every test.</aside>
+  </section>
+
+  <!-- S4. Round 1: scaling at equal energy -->
+  <section class="dk" data-round="1" style="gap:40px">
     <h2 class="t-h2">On HPL, four nodes were 3.6× faster for the same energy</h2>
     <div class="duo compact rise">
       <div><span class="label" style="font-size:28px">1 node</span><span class="bignum">11:19</span><span>minutes to solve</span>
@@ -99,10 +115,10 @@ html.read .trap{grid-template-columns:1fr}
       <div><span>It was actually</span><p>flattering short runs: the solve's work over the whole job's power. We fixed it.</p></div>
     </div>
     <div class="srcl">HPL, N = 250,000, 1 vs 4 Cirrus nodes, both PASSED. Jobs 571593 and 571373. Efficiency = solve work ÷ whole-job energy. Data from hpl/results/SUMMARY.md.</div>
-    <aside class="notes">In Edinburgh we tuned two benchmarks, HPL and HPCG, for speed and energy efficiency. HPL solves one huge set of equations. The biggest lever was problem size: bigger problems are more efficient. At our largest size, four nodes solved it 3.6 times faster for the same energy. The check here was our own formula. It divided the solve's work by the whole job's power, which flattered short runs. Once we fixed it, the numbers made sense.</aside>
+    <aside class="notes">With the best settings, at our largest problem size, four nodes solved it 3.6 times faster for the same energy. So scaling out cost nothing in efficiency, once each node had enough work. One check mattered here. Our first formula divided the solve's work by the whole job's power, which flattered short runs. We fixed it before choosing our final runs.</aside>
   </section>
 
-  <!-- S4. Round 1: half the cores -->
+  <!-- S5. Round 1: half the cores -->
   <section class="dk" data-round="1" style="gap:36px">
     <h2 class="t-h2">HPCG ran just as fast with half the cores switched off</h2>
     <div class="nodes2 rise">
@@ -122,9 +138,26 @@ html.read .trap{grid-template-columns:1fr}
     <aside class="notes">HPCG is the opposite kind of benchmark: it mostly reads data from memory. When we ran it on half the cores, it went just as fast and used 7% less power. If removing half the workers doesn't slow you down, the workers aren't the bottleneck. Memory is. So our most efficient HPCG run left half the node idle: 8% better efficiency.</aside>
   </section>
 
-  <!-- S5. Round 2: roofline -->
-  <section class="dk" data-round="2" style="gap:36px">
+  <!-- S6. Round 2: node ceilings -->
+  <section class="dk" data-round="2" style="gap:30px">
     <span class="rtag rise">Round 2 <i></i> Durham</span>
+    <h2 class="t-h2">Both nodes met their compute spec, but memory bandwidth reached only 56% and 71% of spec</h2>
+    <div class="stack rise" style="--gap:18px">
+      <div class="cl-head"><span>Measured with likwid-bench, full node</span><span><em>spec</em></span><span style="text-align:right">vs spec</span></div>
+      <div class="ceil">
+        <div class="cl" style="--k:0"><span class="cl-l">DINE · FP32 compute<small>3,341 of 3,072 GFLOP/s at base clock</small></span><span class="cl-t"><i style="--v:109"></i></span><b>109%</b></div>
+        <div class="cl" style="--k:1"><span class="cl-l">DINE2 · FP32 compute<small>9,287 of 8,602 GFLOP/s at base clock</small></span><span class="cl-t"><i style="--v:108"></i></span><b>108%</b></div>
+        <div class="cl mem" style="--k:2"><span class="cl-l">DINE · memory bandwidth<small>231 of 410 GB/s</small></span><span class="cl-t"><i style="--v:56"></i></span><b>56%</b></div>
+        <div class="cl mem" style="--k:3"><span class="cl-l">DINE2 · memory bandwidth<small>398 of 563 GB/s</small></span><span class="cl-t"><i style="--v:71"></i></span><b>71%</b></div>
+      </div>
+    </div>
+    <p class="t-lead wide rise">DINE2 has twice the cores of DINE but only 1.7 times the bandwidth, so each core gets less memory: 6.2 against 7.2 GB/s.</p>
+    <div class="srcl">Medians of 3 runs of peakflops_sp (AVX or AVX-512 FMA) and triad_mem (non-temporal stores). Compute spec is sockets × cores × base GHz × FLOP per cycle. Memory spec assumes the rated DIMM speed, which we could not verify. Data from analysis/overnight-20261022T224854Z/ceilings.csv and report/report.tex.</div>
+    <aside class="notes">In Durham we first measured two nodes with LIKWID. DINE is a 32-core AMD node, DINE2 a 64-core Intel node. Both slightly beat their compute spec, which we put down to turbo. Memory bandwidth reached only 56% and 71% of spec. DINE2 has twice the cores but only 1.7 times the bandwidth, so each of its cores gets less memory.</aside>
+  </section>
+
+  <!-- S7. Round 2: roofline -->
+  <section class="dk" data-round="2" style="gap:36px">
     <h2 class="t-h2">Grid, a physics code, is limited by memory, not by compute</h2>
     <div class="rise" style="display:grid;grid-template-columns:940px 1fr;gap:64px;align-items:center">
       <svg class="chart" id="roofline" viewBox="0 0 1000 640" role="img" aria-label="Roofline for the two Durham nodes. Grid's points sit far to the left, on the slope where memory bandwidth sets the speed."></svg>
@@ -135,10 +168,10 @@ html.read .trap{grid-template-columns:1fr}
       </div>
     </div>
     <div class="srcl">Grid on DINE and DINE2. Ceilings from likwid-bench (FP32 peak, triad); Grid intensity 1.57 and 2.08 FLOP/byte from likwid-perfctr, whole process. Data from ceilings.csv and report/report.tex.</div>
-    <aside class="notes">In Durham we measured two nodes' limits with LIKWID: how fast they can calculate, and how fast they can move data from memory. Then we ran Grid, a physics code. Grid does about 2 calculations for every byte it fetches. The nodes need 15 to 23 to keep their cores busy. So Grid is limited by memory, and it reaches 61 to 71% of that limit.</aside>
+    <aside class="notes">Then we ran Grid, a physics code. Dividing the two ceilings gives each node's ridge point, 15 and 23 FLOPs per byte. Grid does about 2. So on both nodes Grid is limited by memory bandwidth, not by compute, and it reaches 61 to 71% of that limit.</aside>
   </section>
 
-  <!-- S6. Round 2: thread placement -->
+  <!-- S8. Round 2: thread placement -->
   <section class="dk" data-round="2" style="gap:40px">
     <h2 class="t-h2">Clang looked faster than GCC. It was really thread placement.</h2>
     <div class="rise" style="display:grid;grid-template-columns:900px 1fr;gap:72px;align-items:center">
@@ -159,25 +192,11 @@ html.read .trap{grid-template-columns:1fr}
     <aside class="notes">Early on, Clang looked faster than GCC on one node. Then we checked where each one put its threads. That node numbers its cores even on one socket and odd on the other, so the default setting split neighbouring threads across sockets. Fixing the placement gave up to 58%, and the compiler gap went away. Before blaming one thing, check what else changed.</aside>
   </section>
 
-  <!-- S7. Round 3: model selection -->
-  <section class="dk" data-round="3" style="gap:40px">
-    <span class="rtag rise">Round 3 <i></i> UCL</span>
-    <h2 class="t-h2">Our first model was 76% accurate, and caught no one</h2>
-    <div class="duo compact rise">
-      <div><span class="label" style="font-size:28px">First model</span><span class="bignum bad"><span data-count data-from="60" data-to="0">0</span> <span style="font-size:.4em;color:var(--soft)">of 60</span></span><span>resistant patients flagged</span></div>
-      <div><span class="label" style="font-size:28px;color:var(--accent)">After the fix</span><span class="bignum"><span data-count data-from="0" data-to="39">39</span> <span style="font-size:.4em;color:var(--soft)">of 60</span></span><span>resistant patients flagged</span></div>
-    </div>
-    <div class="trap rise">
-      <div><span>First we thought</span><p>76% accuracy meant a good model.</p></div>
-      <div><span>Then we checked</span><p>who it actually flagged.</p></div>
-      <div><span>It was actually</span><p>saying everyone was fine. Only 1 in 4 patients is resistant.</p></div>
-    </div>
-    <div class="srcl">Synthetic data, 1,000 patients. Test set of 250 (60 resistant). First model ranked by ROC AUC; fix = class weights + balanced accuracy. Data from outputs/model_comparison.csv.</div>
-    <aside class="notes">At UCL we built models to predict antibiotic resistance, on synthetic patient data, on a locked-down server. Only one patient in four is resistant. Our first model was 76% accurate. First we thought that was good. Then we checked who it flagged: nobody. It just said everyone was fine. We changed how we scored models, and the fixed one caught 39 of 60.</aside>
-  </section>
+  
 
-  <!-- S8. Round 3: risk factors -->
-  <section class="dk" data-round="3" style="gap:40px">
+  <!-- S9. Round 3: UCL -->
+  <section class="dk" data-round="3" style="gap:36px">
+    <span class="rtag rise">Round 3 <i></i> UCL</span>
     <h2 class="t-h2">Only age predicts resistance better than chance</h2>
     <div class="rise" style="display:grid;grid-template-columns:1fr 470px;gap:80px;align-items:end">
       <div class="stack" style="--gap:10px">
@@ -200,12 +219,12 @@ html.read .trap{grid-template-columns:1fr}
         </div>
       </div>
     </div>
-    <p class="t-lead wide rise">Deprivation had looked important, until a column of random numbers scored higher on the same measure. So we chose a simple tree a doctor can read, which did as well as the random forest.</p>
+    <p class="t-lead wide rise">Our first tree was 76% accurate and flagged none of the 60 resistant patients, so we ranked models by balanced accuracy instead. Deprivation looked important until random numbers scored higher on the same measure.</p>
     <div class="srcl">Synthetic data. Dots: 5-fold cross-validated ROC AUC of each factor alone, against 100 shuffled copies. Data from outputs/risk_factors_summary.txt and notes/2026-10-29-risk-factors.md.</div>
-    <aside class="notes">To find what really matters, we compared every factor against shuffled copies of itself, plus a column of random numbers. Only age beat chance: resistance goes from 8% at 20 to 40, to 41% over 70. Deprivation had looked important, until the random numbers scored higher on the same measure. So we picked a simple tree a doctor can read, which did as well as the complex model.</aside>
+    <aside class="notes">At UCL we built tree models to predict antibiotic resistance, on synthetic patient data, on a locked-down cloud server. Two checks mattered. Our first tree was 76% accurate but flagged no resistant patients, because only one in four is resistant, so we switched to balanced accuracy. Then we tested every factor against shuffled copies and a column of random numbers. Only age beat chance. Our final model is a depth-3 tree a clinician can read, as good as the random forest within noise.</aside>
   </section>
 
-  <!-- S9. Lesson -->
+  <!-- S10. Lesson -->
   <section class="dk" style="gap:48px">
     <h2 class="t-h2">In all three rounds, a simple check changed our first answer</h2>
     <div class="tbl rise">
@@ -224,6 +243,22 @@ html.read .trap{grid-template-columns:1fr}
     <span class="rtag rise">Backup</span>
     <h2 class="t-h op">Detail slides for questions</h2>
     <p class="t-lead rise">Full numbers, methods and sources for each round.</p>
+  </section>
+
+  <!-- B. UCL model selection (was a talk slide) -->
+  <section class="dk" data-round="3" style="gap:40px">
+    <h2 class="t-h2">Our first model was 76% accurate, and caught no one</h2>
+    <div class="duo compact rise">
+      <div><span class="label" style="font-size:28px">First model</span><span class="bignum bad"><span data-count data-from="60" data-to="0">0</span> <span style="font-size:.4em;color:var(--soft)">of 60</span></span><span>resistant patients flagged</span></div>
+      <div><span class="label" style="font-size:28px;color:var(--accent)">After the fix</span><span class="bignum"><span data-count data-from="0" data-to="39">39</span> <span style="font-size:.4em;color:var(--soft)">of 60</span></span><span>resistant patients flagged</span></div>
+    </div>
+    <div class="trap rise">
+      <div><span>First we thought</span><p>76% accuracy meant a good model.</p></div>
+      <div><span>Then we checked</span><p>who it actually flagged.</p></div>
+      <div><span>It was actually</span><p>saying everyone was fine. Only 1 in 4 patients is resistant.</p></div>
+    </div>
+    <div class="srcl">Synthetic data, 1,000 patients. Test set of 250 (60 resistant). First model ranked by ROC AUC; fix = class weights + balanced accuracy. Data from outputs/model_comparison.csv.</div>
+    <aside class="notes">At UCL we built models to predict antibiotic resistance, on synthetic patient data, on a locked-down server. Only one patient in four is resistant. Our first model was 76% accurate. First we thought that was good. Then we checked who it flagged: nobody. It just said everyone was fine. We changed how we scored models, and the fixed one caught 39 of 60.</aside>
   </section>
 
   <!-- ===================== BACKUP (original slides) ===================== -->
@@ -246,20 +281,7 @@ html.read .trap{grid-template-columns:1fr}
     <aside class="notes">Each Cirrus node has two 144-core AMD EPYC 9825 processors. The cores are grouped into 24 chiplets of 12 cores, and Slurm exposes 8 NUMA domains. Half of the marks were for GFLOPS per watt. Every run therefore recorded energy from Slurm’s counters as well as GFLOPS.</aside>
   </section>
 
-  <!-- B4. original slide 4 -->
-  <section class="dk" data-round="1" style="gap:34px">
-    <h2 class="t-h2">On one node, problem size accounted for most of the HPL improvement and compiler flags for almost none</h2>
-    <div class="levers rise">
-      <div class="lv" style="--k:0"><span class="lv-l">Problem size N<small>99,840 → 278,784 · 10% → 80% of memory</small></span><span class="lv-t"><i style="--v:48"></i></span><b>+48%</b></div>
-      <div class="lv" style="--k:1"><span class="lv-l">One MPI rank per chiplet<small>24 ranks × 12 threads instead of 8 × 36</small></span><span class="lv-t"><i style="--v:13"></i></span><b>+13%</b></div>
-      <div class="lv" style="--k:2"><span class="lv-l">Broadcast algorithm<small>BCAST 3 instead of the default 1</small></span><span class="lv-t"><i style="--v:4"></i></span><b>+4%</b></div>
-      <div class="lv off" style="--k:3"><span class="lv-l">Compiler flags<small>Cray -O2, -O3, -Ofast, -flto</small></span><span class="lv-t"><i style="--v:2"></i></span><b>≤2%</b></div>
-      <div class="lv off" style="--k:4"><span class="lv-l">CPU frequency cap<small>1.5, 1.8 and 2.2 GHz (not applied under load)</small></span><span class="lv-t"><i style="--v:0"></i></span><b>0%</b></div>
-    </div>
-    <p class="t-lead wide rise">HPL work grows as N³ while setup and communication grow as N². Over 95% of runtime is DGEMM inside Cray LibSci, which compiler flags do not change.</p>
-    <div class="srcl">HPL GFLOPS on one node, with each comparison made on a single node. Data from hpl/results/HPL_RESULTS.md, jobs 563364, 570197, 570191, 570247, 570203 and 570265.</div>
-    <aside class="notes">We tested five HPL parameters on one node. Problem size had by far the largest effect, because computation grows faster than overhead as N increases. Placing one MPI rank on each 12-core chiplet added 13%. Compiler flags made no measurable difference, since almost all of the time is spent inside the vendor DGEMM. The frequency cap was set but not honoured under load, so we cannot say whether a lower clock would have saved energy.</aside>
-  </section>
+  
 
   <!-- B6. original slide 6 -->
   <section class="dk" data-round="1">
@@ -310,22 +332,7 @@ html.read .trap{grid-template-columns:1fr}
     <aside class="notes">The Durham brief asked how close each node gets to its vendor specification, and where the Grid lattice QCD benchmark sits between the compute and bandwidth limits. That was the measurement we had been missing on Cirrus. The two nodes differ in vendor and in core count, which made the comparison useful.</aside>
   </section>
 
-  <!-- B10. original slide 10 -->
-  <section class="dk" data-round="2" style="gap:30px">
-    <h2 class="t-h2">Both nodes met their compute specification, but measured bandwidth reached only 56% and 71% of the memory specification</h2>
-    <div class="stack rise" style="--gap:18px">
-      <div class="cl-head"><span>Measured with likwid-bench, full node</span><span><em>spec</em></span><span style="text-align:right">vs spec</span></div>
-      <div class="ceil">
-        <div class="cl" style="--k:0"><span class="cl-l">DINE · FP32 compute<small>3,341 of 3,072 GFLOP/s at base clock</small></span><span class="cl-t"><i style="--v:109"></i></span><b>109%</b></div>
-        <div class="cl" style="--k:1"><span class="cl-l">DINE2 · FP32 compute<small>9,287 of 8,602 GFLOP/s at base clock</small></span><span class="cl-t"><i style="--v:108"></i></span><b>108%</b></div>
-        <div class="cl mem" style="--k:2"><span class="cl-l">DINE · memory bandwidth<small>231 of 410 GB/s</small></span><span class="cl-t"><i style="--v:56"></i></span><b>56%</b></div>
-        <div class="cl mem" style="--k:3"><span class="cl-l">DINE2 · memory bandwidth<small>398 of 563 GB/s</small></span><span class="cl-t"><i style="--v:71"></i></span><b>71%</b></div>
-      </div>
-    </div>
-    <p class="t-lead wide rise">The ratio of the two measured ceilings is the ridge point. Below about 14.5 FLOPs per byte on DINE and 23.3 on DINE2, memory sets the speed.</p>
-    <div class="srcl">Medians of 3 runs of peakflops_sp (AVX or AVX-512 FMA) and triad_mem (non-temporal stores). Compute spec is sockets × cores × base GHz × FLOP per cycle. Memory spec assumes the rated DIMM speed, which we could not verify. Data from analysis/overnight-20261022T224854Z/ceilings.csv and report/report.tex.</div>
-    <aside class="notes">LIKWID’s peak FLOP kernel slightly exceeded the base-clock specification on both nodes, which we attribute to turbo. Measured memory bandwidth reached 56% of the specification on DINE and 71% on DINE2. Dividing the two measured ceilings gives the ridge point. Any code below about 15 FLOPs per byte on DINE, or 23 on DINE2, is limited by memory.</aside>
-  </section>
+  
 
   <!-- B13. original slide 13 -->
   <section class="dk" data-round="2" style="gap:36px">
