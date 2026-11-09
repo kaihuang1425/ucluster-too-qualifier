@@ -42,7 +42,7 @@ jobs:
           gh release upload pptx-latest export/UCLuster-Too-qualifier.pptx export/UCLuster-Too-qualifier-pictures.pptx --clobber
           gh release edit pptx-latest --notes "Rebuilt from main at commit ${GITHUB_SHA::7} on $(date -u '+%d %b %Y, %H:%M') UTC.
 
-          - UCLuster-Too-qualifier.pptx has editable text over each slide's design. Install Google Sans Flex and Google Sans Code for an exact match.
-          - UCLuster-Too-qualifier-pictures.pptx shows each slide as one picture, identical everywhere.
+          - UCLuster-Too-qualifier.pptx rebuilds each slide from PowerPoint shapes and text boxes, with no pictures. Install Google Sans Flex and Google Sans Code for an exact match.
+          - UCLuster-Too-qualifier-pictures.pptx shows each slide as one picture, identical everywhere but not editable.
 
           The web deck is the source. Edits made in PowerPoint do not reach the site."
