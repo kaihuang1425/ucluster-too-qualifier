@@ -1,0 +1,48 @@
+name: PowerPoint copy
+
+# Rebuilds the PowerPoint files from main and attaches them to the "pptx-latest" release,
+# so the download links in the README always give the current deck.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pptx
+  cancel-in-progress: true
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Playwright with Chromium, and python-pptx
+        run: |
+          pip install playwright==1.62.0 python-pptx==1.0.2
+          python -m playwright install --with-deps chromium
+
+      - name: Export the deck to PowerPoint
+        run: python tools/export_pptx.py
+
+      - name: Attach the files to the pptx-latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view pptx-latest >/dev/null 2>&1 || \
+            gh release create pptx-latest --title "PowerPoint copy of the deck" --notes "Rebuilt from main after every change." --latest=false
+          gh release upload pptx-latest export/UCLuster-Too-qualifier.pptx export/UCLuster-Too-qualifier-pictures.pptx --clobber
+          gh release edit pptx-latest --notes "Rebuilt from main at commit ${GITHUB_SHA::7} on $(date -u '+%d %b %Y, %H:%M') UTC.
+
+          - UCLuster-Too-qualifier.pptx has editable text over each slide's design. Install Google Sans Flex and Google Sans Code for an exact match.
+          - UCLuster-Too-qualifier-pictures.pptx shows each slide as one picture, identical everywhere.
+
+          The web deck is the source. Edits made in PowerPoint do not reach the site."
