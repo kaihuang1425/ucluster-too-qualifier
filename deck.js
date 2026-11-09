@@ -27,14 +27,21 @@ var DECK_DATA = {
   var bar = document.getElementById('bar'), counter = document.getElementById('count');
   var NS = 'http://www.w3.org/2000/svg';
   var forced = (/[?&]mode=(read|slides)\b/.exec(location.search) || [])[1];
-  var still = /[?&]static\b/.test(location.search);
+  // ?edit opens the page editor (edit/edit.mjs). Each element is numbered before anything below changes the page,
+  // so the editor can find it again in index.html.
+  var EDIT = /[?&]edit\b/.test(location.search);
+  if (EDIT) { root.classList.add('editing'); [].forEach.call(stage.querySelectorAll('*'), function (e, i) { e.setAttribute('data-si', i); }); }
+  var still = EDIT || /[?&]static\b/.test(location.search);
   if (still) root.classList.add('static');
   // phones (and any window under 600 px on its short side) get a scrolling reading layout; tablets and desktops get slides
   function wantRead() { return forced ? forced === 'read' : Math.min(innerWidth, innerHeight) < 600; }
   var READ = root.classList.contains('read');
   function vw() { return window.visualViewport ? visualViewport.width : innerWidth; }
   function vh() { return window.visualViewport ? visualViewport.height : innerHeight; }
-  function fit() { if (!READ) stage.style.setProperty('--s', Math.min(vw() / 1920, vh() / 1080)); }
+  // the editor's toolbar takes --ed-bottom pixels at the bottom of the window
+  function dockH() { return EDIT ? parseFloat(getComputedStyle(root).getPropertyValue('--ed-bottom')) || 0 : 0; }
+  function fit() { if (!READ) stage.style.setProperty('--s', Math.min(vw() / 1920, (vh() - dockH()) / 1080)); }
+  function typing(t) { return !!(t && t.closest && t.closest('[contenteditable="true"], input, textarea, select, .ed-dock, .ed-modal')); }
   function hashN() { return parseInt(location.hash.slice(1), 10) || 1; }
   function E(tag, attrs, parent, text) { var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
   function fmt(v, d) { return v.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d }); }
@@ -43,7 +50,7 @@ var DECK_DATA = {
     s.querySelectorAll('.rise').forEach(function (r, i) { r.style.setProperty('--ri', i); });
     // speaker notes become an expandable block in the reading layout
     var a = s.querySelector('.notes');
-    if (a) { var d = document.createElement('details'); d.className = 'rnotes'; d.innerHTML = '<summary>Speaker notes</summary><p>' + a.innerHTML + '</p>'; s.appendChild(d); }
+    if (a && !EDIT) { var d = document.createElement('details'); d.className = 'rnotes'; d.innerHTML = '<summary>Speaker notes</summary><p>' + a.innerHTML + '</p>'; s.appendChild(d); }
   });
 
   // core maps: 24 chiplets (columns) of 12 cores; "half" lights one core of each pair
@@ -197,6 +204,7 @@ var DECK_DATA = {
     counter.textContent = (n + 1) + ' / ' + slides.length;
     if (!notes.hidden) showNotes();
     history.replaceState(null, '', '#' + (n + 1));
+    if (window.DECK && DECK.onchange) DECK.onchange(n);
   }
 
   var io = null;
@@ -218,6 +226,7 @@ var DECK_DATA = {
     } else {
       var c = cur; cur = -1; fit(); go(c >= 0 ? c : hashN() - 1);
     }
+    if (window.DECK && DECK.onmode) DECK.onmode(read);
   }
   function onScroll() { if (!READ) return; var h = root.scrollHeight - innerHeight; bar.style.setProperty('--p', h > 0 ? Math.min(1, scrollY / h) : 0); }
   addEventListener('scroll', onScroll, { passive: true });
@@ -236,7 +245,8 @@ var DECK_DATA = {
     if (req) { var r = req.call(el); if (r && r.catch) r.catch(function () {}); }
   }
   addEventListener('keydown', function (e) {
-    if (READ) return;
+    if (READ || typing(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (EDIT && (e.key === 'n' || e.key === 'N' || e.key === 'Backspace')) return;
     if (['ArrowRight', 'PageDown', ' ', 'Enter'].indexOf(e.key) >= 0) { e.preventDefault(); go(cur + 1); }
     else if (['ArrowLeft', 'PageUp', 'Backspace'].indexOf(e.key) >= 0) { e.preventDefault(); go(cur - 1); }
     else if (e.key === 'Home') go(0); else if (e.key === 'End') go(slides.length - 1);
@@ -245,14 +255,14 @@ var DECK_DATA = {
   });
   // touch: swipe left or right to change slide; a tap on either half still works
   var tx = null, ty = 0, swipedAt = 0;
-  addEventListener('touchstart', function (e) { if (READ || e.touches.length !== 1) { tx = null; return; } tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
+  addEventListener('touchstart', function (e) { if (READ || e.touches.length !== 1 || typing(e.target)) { tx = null; return; } tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
   addEventListener('touchend', function (e) {
     if (READ || tx === null) return;
     var dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty; tx = null;
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) { swipedAt = Date.now(); go(cur + (dx < 0 ? 1 : -1)); }
   }, { passive: true });
   addEventListener('click', function (e) {
-    if (READ || Date.now() - swipedAt < 500 || e.target.closest('a, button, summary, .notes-ov')) return;
+    if (READ || EDIT || Date.now() - swipedAt < 500 || e.target.closest('a, button, summary, .notes-ov')) return;
     go(cur + (e.clientX > innerWidth / 2 ? 1 : -1));
   });
   addEventListener('hashchange', function () { var h = hashN(); if (READ) { if (slides[h - 1]) slides[h - 1].scrollIntoView(); } else go(h - 1); });
@@ -265,6 +275,16 @@ var DECK_DATA = {
   });
   addEventListener('afterprint', function () { if (printedFromRead) setMode(true); });
 
+  // what the page editor needs from the deck
+  window.DECK = { slides: slides, go: go, fit: fit, redraw: drawCharts,
+    cur: function () { return cur; }, read: function () { return READ; }, onchange: null, onmode: null };
+
   setMode(READ);
   if (READ && hashN() > 1 && slides[hashN() - 1]) slides[hashN() - 1].scrollIntoView();
+
+  if (EDIT) import('./edit/edit.mjs').catch(function (err) {
+    var m = document.createElement('div'); m.className = 'ed-fail';
+    m.textContent = 'The editor did not load (' + (err && err.message || err) + '). Reload the page to try again.';
+    document.body.appendChild(m);
+  });
 })();

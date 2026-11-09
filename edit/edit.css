@@ -1,0 +1,155 @@
+/* Page editor (?edit). Loaded only in edit mode, so nothing here reaches the talk itself. */
+
+.editing { --ed-bottom: 150px; }
+.ed-dock [hidden], .ed-modal [hidden] { display: none !important; }
+.editing.read { --ed-bottom: 0px; }
+.editing .notes-ov { display: none !important; }
+/* the automatic check measures slides with nothing allowed to shrink, so the editor shows them the same way */
+.editing .dk > * { flex-shrink: 0 !important; }
+.editing.slides .stage { top: calc((100vh - var(--ed-bottom)) / 2); }
+.editing.slides body { overflow: hidden; }
+
+/* editable text */
+.editing [data-ed] { cursor: text; border-radius: 6px; transition: box-shadow .15s ease, background-color .15s ease; -webkit-user-select: text; user-select: text; }
+.editing [data-ed]:hover { box-shadow: 0 0 0 4px rgba(168,199,250,.28); }
+.editing [data-ed]:focus { outline: none; box-shadow: 0 0 0 4px var(--accent); background-color: rgba(168,199,250,.06); }
+.editing [data-ed].ed-dirty { box-shadow: 0 0 0 4px rgba(109,213,140,.55); }
+.editing [data-ed].ed-dirty:focus { box-shadow: 0 0 0 4px var(--accent); }
+.editing.read [data-ed]:hover { box-shadow: 0 0 0 2px rgba(168,199,250,.28); }
+.editing.read [data-ed].ed-dirty { box-shadow: 0 0 0 2px rgba(109,213,140,.55); }
+.editing.read [data-ed]:focus { box-shadow: 0 0 0 2px var(--accent); }
+.editing .dk.ed-over { box-shadow: inset 0 0 0 6px var(--bad); }
+.editing .dk.ed-over::after { content: attr(data-ed-over); position: absolute; left: 150px; bottom: 28px; z-index: 9; font: 500 24px var(--sans); color: var(--bad); background: rgba(19,19,20,.92); padding: 10px 18px; border-radius: 12px; }
+
+/* speaker notes in the reading layout sit under each slide */
+.editing.read .dk .notes { display: block; margin-top: 14px; padding: 12px 14px; background: var(--surface); border-radius: 12px; color: var(--muted); font-size: 15px; line-height: 1.5; }
+.editing.read .dk .notes::before { content: 'Speaker notes'; display: block; font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin-bottom: 4px; }
+.editing.read body { padding-bottom: 96px; }
+
+/* the dock */
+.ed-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: grid; grid-template-rows: auto 1fr; height: var(--ed-bottom); box-sizing: border-box; padding: 0 16px calc(env(safe-area-inset-bottom) + 10px); background: #131314; box-shadow: 0 -1px 0 var(--hair), 0 -24px 48px rgba(0,0,0,.45); color: var(--ink); font: 400 14px/1.4 var(--sans); }
+.read .ed-dock { height: auto; padding-top: 0; }
+.ed-row { display: flex; align-items: center; gap: 10px; min-height: 52px; min-width: 0; }
+.ed-row > .ed-grow { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
+.ed-mode { display: inline-flex; align-items: center; gap: 8px; font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--soft); white-space: nowrap; }
+.ed-mode i { width: 8px; height: 8px; border-radius: 50%; background: var(--grad); box-shadow: 0 0 10px rgba(168,199,250,.6); }
+.ed-pos { display: inline-flex; align-items: center; gap: 2px; font: 500 13px var(--mono); color: var(--muted); }
+.ed-pos span { min-width: 58px; text-align: center; }
+.ed-sum { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--soft); }
+.ed-sum b { color: var(--ink); font-weight: 500; }
+
+.ed-btn { -webkit-appearance: none; appearance: none; border: 0; margin: 0; font: 500 14px var(--sans); color: var(--ink); background: var(--surface-2); height: 36px; padding: 0 14px; border-radius: 18px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; transition: background .15s ease, color .15s ease, opacity .15s ease; }
+.ed-btn:hover { background: var(--surface-3, #33363A); }
+.ed-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ed-btn[disabled] { opacity: .45; cursor: default; }
+.ed-btn.icon { width: 36px; padding: 0; justify-content: center; font-size: 18px; }
+.ed-btn.ghost { background: transparent; color: var(--soft); }
+.ed-btn.ghost:hover { background: var(--surface-2); color: var(--ink); }
+.ed-btn.primary { background: var(--accent); color: var(--accent-ink); }
+.ed-btn.primary:hover { background: var(--link-hover); }
+.ed-btn.danger { background: var(--bad-soft); color: var(--bad); }
+.ed-btn .ed-n { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; font: 600 12px var(--sans); background: var(--accent-ink); color: var(--accent); box-sizing: border-box; }
+
+.ed-chk { display: none; }
+.ed-chk.on { display: inline-flex; }
+.ed-chk.bad { background: var(--bad-soft); color: var(--bad); }
+.ed-chk.warn { background: rgba(253,214,99,.12); color: #FDD663; }
+.ed-pr { display: none; }
+.ed-pr.on { display: inline-flex; }
+.ed-pr .ed-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--soft); }
+.ed-pr.run .ed-dot { background: #FDD663; animation: ed-pulse 1.2s ease-in-out infinite; }
+.ed-pr.ok .ed-dot { background: var(--ok); }
+.ed-pr.bad .ed-dot { background: var(--bad); }
+@keyframes ed-pulse { 50% { opacity: .35; } }
+
+.ed-acct { display: inline-flex; align-items: center; gap: 8px; color: var(--soft); white-space: nowrap; }
+.ed-acct img { width: 26px; height: 26px; border-radius: 50%; }
+
+.ed-notes { display: grid; grid-template-columns: 112px 1fr; gap: 12px; min-height: 0; }
+.read .ed-notes { display: none; }
+.ed-notes > span { padding-top: 8px; font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+.ed-host { min-height: 0; overflow: auto; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--hair); }
+.ed-host .notes { display: block; min-height: 100%; box-sizing: border-box; padding: 8px 12px; color: var(--muted); font-size: 14px; line-height: 1.5; border-radius: 12px; }
+.ed-host .notes:focus { box-shadow: inset 0 0 0 2px var(--accent); background: transparent; }
+.ed-host .notes.ed-dirty { box-shadow: inset 0 0 0 2px rgba(109,213,140,.55); }
+.ed-host .ed-empty { display: block; padding: 8px 12px; color: var(--dim); }
+
+/* reading layout on phones: one compact row */
+.read .ed-dock .ed-wide { display: none; }
+.read .ed-row { min-height: 56px; gap: 8px; }
+
+/* small toast above the dock */
+.ed-toast { position: fixed; left: 50%; bottom: calc(var(--ed-bottom) + 16px); transform: translate(-50%, 8px); z-index: 45; max-width: min(640px, calc(100vw - 32px)); padding: 10px 16px; border-radius: 14px; background: var(--surface-2); color: var(--ink); font: 400 14px/1.4 var(--sans); box-shadow: 0 12px 36px rgba(0,0,0,.5); opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; }
+.read .ed-toast { bottom: 84px; }
+.ed-toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+/* modal */
+.ed-modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; background: rgba(0,0,0,.6); font: 400 15px/1.5 var(--sans); color: var(--ink); }
+.ed-modal[hidden] { display: none; }
+.ed-card { width: min(760px, 100%); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); display: grid; grid-template-rows: auto 1fr auto; background: var(--surface); border-radius: 24px; box-shadow: inset 0 0 0 1px var(--hair), 0 30px 80px rgba(0,0,0,.6); overflow: hidden; }
+.ed-card > header { padding: 22px 24px 8px; }
+.ed-card > header h3 { margin: 0; font: 500 22px/1.3 var(--sans); letter-spacing: -.01em; }
+.ed-card > header p { margin: 6px 0 0; color: var(--soft); }
+.ed-body { overflow: auto; padding: 8px 24px 16px; min-height: 0; }
+.ed-card > footer { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; padding: 14px 24px 20px; box-shadow: 0 -1px 0 var(--hair); }
+.ed-card > footer .ed-grow { flex: 1; }
+.ed-link { color: var(--accent); text-decoration: none; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+.ed-link:hover { text-decoration: underline; }
+
+.ed-slide { margin: 14px 0 0; }
+.ed-slide > h4 { margin: 0 0 6px; font: 500 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
+.ed-change { padding: 10px 14px; border-radius: 12px; background: var(--bg); margin-bottom: 6px; word-break: break-word; }
+.ed-change del { color: var(--bad); background: var(--bad-soft); text-decoration: line-through; border-radius: 4px; padding: 0 2px; }
+.ed-change ins { color: var(--ok); background: var(--ok-soft); text-decoration: none; border-radius: 4px; padding: 0 2px; }
+.ed-change small { display: block; color: var(--dim); font-size: 12px; margin-top: 2px; }
+
+.ed-field { display: grid; gap: 6px; margin-top: 18px; }
+.ed-field label { font-size: 13px; color: var(--soft); }
+.ed-input { -webkit-appearance: none; appearance: none; width: 100%; box-sizing: border-box; height: 42px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--surface-2); color: var(--ink); font: 400 15px var(--sans); box-shadow: inset 0 0 0 1px var(--hair); }
+.ed-input:focus { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
+.ed-input.bad { box-shadow: inset 0 0 0 2px var(--bad); }
+
+.ed-note { margin: 14px 0 0; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); color: var(--muted); }
+.ed-note.bad { background: var(--bad-soft); color: var(--bad); }
+.ed-note.warn { background: rgba(253,214,99,.10); color: #FDD663; }
+.ed-note.ok { background: var(--ok-soft); color: var(--ok-tint); }
+.ed-note ul { margin: 6px 0 0; padding-left: 18px; }
+
+.ed-steps { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+.ed-steps li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; padding: 10px 0; align-items: start; }
+.ed-steps li > i { width: 22px; height: 22px; margin-top: 1px; border-radius: 50%; display: grid; place-items: center; font: 700 12px var(--sans); font-style: normal; background: var(--surface-2); color: var(--soft); }
+.ed-steps li.run > i { background: rgba(253,214,99,.16); color: #FDD663; }
+.ed-steps li.run > i::before { content: ''; width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: ed-spin .8s linear infinite; }
+.ed-steps li.ok > i { background: var(--ok-soft); color: var(--ok); }
+.ed-steps li.ok > i::before { content: '✓'; }
+.ed-steps li.bad > i { background: var(--bad-soft); color: var(--bad); }
+.ed-steps li.bad > i::before { content: '!'; }
+.ed-steps b { font-weight: 500; }
+.ed-steps span { display: block; color: var(--soft); font-size: 14px; }
+@keyframes ed-spin { to { transform: rotate(360deg); } }
+
+/* chart numbers */
+.ed-tbl { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 14px; }
+.ed-tbl th { text-align: left; font: 500 12px var(--sans); color: var(--soft); padding: 6px 6px; vertical-align: bottom; }
+.ed-tbl td { padding: 4px 6px; }
+.ed-tbl td:first-child { color: var(--muted); white-space: nowrap; }
+.ed-tbl .ed-input { height: 36px; padding: 0 10px; font: 400 14px var(--mono); }
+.ed-tbl .ed-input.changed { box-shadow: inset 0 0 0 2px rgba(109,213,140,.6); }
+.ed-pairs { display: flex; flex-wrap: wrap; gap: 6px; }
+.ed-pairs label { display: grid; gap: 2px; font: 400 11px var(--mono); color: var(--dim); }
+.ed-pairs .ed-input { width: 84px; }
+
+.ed-fail { position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 60; padding: 14px 18px; border-radius: 14px; background: var(--bad-soft); color: var(--bad); font: 400 15px/1.45 var(--sans); box-shadow: 0 12px 36px rgba(0,0,0,.5); }
+
+@media (max-width: 760px) {
+  .ed-card { border-radius: 20px; }
+  .ed-card > header, .ed-body, .ed-card > footer { padding-left: 16px; padding-right: 16px; }
+}
+/* edit mode keeps the slides still (.static), but the editor's own progress signs still move */
+.static .ed-steps li.run > i::before { animation: ed-spin .8s linear infinite !important; }
+.static .ed-pr.run .ed-dot { animation: ed-pulse 1.2s ease-in-out infinite !important; }
+.static .ed-toast { transition: opacity .2s ease, transform .2s ease !important; }
+.static .ed-btn { transition: background .15s ease, color .15s ease, opacity .15s ease !important; }
+@media (prefers-reduced-motion: reduce) {
+  .static .ed-pr.run .ed-dot, .static .ed-steps li.run > i::before { animation: none !important; }
+}
