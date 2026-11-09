@@ -29,5 +29,12 @@ jobs:
           pip install playwright==1.62.0
           python -m playwright install --with-deps chromium webkit
 
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
       - name: Slides fit, numbers match, phones and iPad work
         run: python tools/check.py
+
+      - name: Page editor works end to end
+        run: python tools/test_editor.py

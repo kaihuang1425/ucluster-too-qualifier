@@ -14,6 +14,8 @@ Errors (the check fails):
   * the iPad layout losing its two-column panels
   * a number whose visible text no longer matches its animation value
     (data-to on counters, --v on bars, --a on the noise plot dots)
+  * the page editor (?edit) failing to start, usually because a tag in index.html is not closed
+    (tools/test_editor.py tests the editor itself in more depth)
 
 Warnings (shown, but the check still passes):
   * house writing rules in visible text and speaker notes
@@ -171,6 +173,24 @@ def main():
                     warn(f"{where}: {name} in \"...{text[max(0, m.start() - 40):m.start() + 20].strip()}...\"")
             for m in re.finditer(r"\b(gaps?|bridges?|shifts?)\b", text, re.I):
                 warn(f"{where}: the word \"{m.group(0)}\" in \"...{text[max(0, m.start() - 40):m.end() + 20].strip()}...\"")
+
+        # The page editor has to be able to follow index.html. Publishing needs the live site, so only start-up is tested here.
+        ed = b.new_page(viewport={"width": 1600, "height": 1000})
+        ed_errors = []
+        ed.on("pageerror", lambda e: ed_errors.append(str(e)))
+        ed.goto(base + "?edit#1")
+        try:
+            ed.wait_for_function("() => { const s = document.querySelector('.ed-sum'); return (s && !/Loading/.test(s.textContent)) || document.querySelector('.ed-fail'); }", timeout=15000)
+            stuck = ed.evaluate("(document.querySelector('.ed-fail') || {}).textContent || ''")
+            if stuck:
+                error("page editor: " + stuck)
+            elif ed.evaluate("document.querySelectorAll('[data-ed]').length") < 100:
+                error("page editor: almost no slide text can be edited on the page")
+        except Exception as e:
+            error("page editor: it did not start (" + str(e).splitlines()[0] + ")")
+        for msg in ed_errors:
+            error("page editor: JavaScript error: " + msg)
+        ed.close()
         b.close()
 
         # iPhone in WebKit: reading layout, nothing wider than the screen
