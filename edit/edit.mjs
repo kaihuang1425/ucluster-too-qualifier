@@ -18,7 +18,7 @@ const baseText = new WeakMap();
 const ALLOW = new Set(['b', 'i', 'em', 'strong', 'sub', 'sup', 's', 'small', 'code', 'u']);
 const VOIDS = new Set(['br', 'img', 'hr', 'wbr']);
 const LABELS = { P: 'Peak GFLOP/s', B: 'Bandwidth GB/s', ai: 'FLOPs per byte', g: 'Grid GFLOP/s' };
-const GROUPS = { roofline: 'Roofline · slide 11', scaling: 'Strong scaling · slide 13' };
+const GROUPS = { roofline: 'Roofline · slide 12', scaling: 'Strong scaling · slide 14' };
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const el = h => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstElementChild; };

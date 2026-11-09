@@ -66,7 +66,7 @@ python tools/test_editor.py
 
 | File | What it holds | Edit it when |
 |---|---|---|
-| `index.html` | the words, numbers and speaker notes for all 23 slides | almost always |
+| `index.html` | the words, numbers and speaker notes for all 24 slides | almost always |
 | `deck.js` | chart numbers in `DECK_DATA` at the top, then the slide logic | a chart number changes |
 | `deck.css` | slide layout and the phone layout | the layout itself needs to change |
 | `house.css` | the shared design system | rarely |
@@ -108,7 +108,7 @@ The check warns about the punctuation and word rules. Warnings do not block a me
 - Each headline states one finding with its number, as a single sentence.
 - Write without colons, semicolons or em dashes. Split the sentence instead.
 - Avoid the words gap, bridges and shifts.
-- Say what we do not know. Limitations belong on slide 21.
+- Say what we do not know. Limitations belong on slide 22.
 
 ## What the check tests
 

@@ -212,9 +212,9 @@ def main():
         # iPad in WebKit: slide layout with two-column panels
         ctx = wk.new_context(viewport={"width": 820, "height": 1180}, is_mobile=True, has_touch=True, user_agent=IPAD_UA)
         page = ctx.new_page(); watch(page, "iPad portrait")
-        page.goto(base + "#5"); page.wait_for_timeout(1500)
+        page.goto(base + "#6"); page.wait_for_timeout(1500)
         mode = page.evaluate("document.documentElement.className")
-        cols = page.evaluate("getComputedStyle(document.querySelectorAll('.dk')[4].querySelector('.duo')).gridTemplateColumns.split(' ').length")
+        cols = page.evaluate("getComputedStyle(document.querySelectorAll('.dk')[5].querySelector('.duo')).gridTemplateColumns.split(' ').length")
         if "slides" not in mode or cols != 2:
             error(f"iPad portrait: expected slides with two-column panels, got \"{mode.strip()}\" with {cols} column(s)")
         ctx.close(); wk.close()

@@ -25,14 +25,14 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
   Speaker notes are the <aside class="notes"> at the end of each section.
   Numbers that count up have data-to="..." as well as visible text. Change both, or tools/check.py will flag it.
 
-   1 Title                     9 Round 2 opener           17 Risk factors vs noise
-   2 Overview                 10 Compute and bandwidth    18 Final model
-   3 Round 1 opener           11 Roofline                 19 Data security
-   4 HPL tuning levers        12 Thread placement         20 Cross-round finding
-   5 Scaling at equal energy  13 Strong scaling           21 Limitations
-   6 HPL vs HPCG              14 Round 2 workflow         22 Team
-   7 HPCG on half the cores   15 Round 3 opener           23 Conclusions
-   8 Round 1 results          16 Model selection metric
+   1 Title                      9 Round 1 results           17 Model selection metric
+   2 Overview                  10 Round 2 opener            18 Risk factors vs noise
+   3 Approach                  11 Compute and bandwidth     19 Final model
+   4 Round 1 opener            12 Roofline                  20 Data security
+   5 HPL tuning levers         13 Thread placement          21 Cross-round finding
+   6 Scaling costs energy      14 Strong scaling            22 Limitations
+   7 HPL vs HPCG               15 Round 2 workflow          23 Team
+   8 HPCG on half the cores    16 Round 3 opener            24 Conclusions
 -->
 <div class="stage" id="stage">
 
@@ -75,9 +75,23 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <aside class="notes">This is the outline. Round 1 ended with a hypothesis about memory bandwidth that we could not test on Cirrus. The Durham brief asked us to measure exactly that. Durham also showed us how easily a confound can look like a real effect. That is why we built permutation controls into the UCL analysis from the start.</aside>
   </section>
 
+  <!-- 3. Approach -->
+  <section class="dk" style="gap:40px">
+    <h2 class="t-h2">We worked through each round in the same five steps</h2>
+    <div class="concl rise">
+      <div><span class="rt-n">01</span><p><b>Get access.</b> Log in, check the hardware and modules, and run a small test job.</p></div>
+      <div><span class="rt-n">02</span><p><b>Understand the problem.</b> Read up on HPL, rooflines or decision trees, and run a baseline.</p></div>
+      <div><span class="rt-n">03</span><p><b>Change one thing at a time.</b> Sweep a single setting with everything else fixed to find its best value.</p></div>
+      <div><span class="rt-n">04</span><p><b>Collect plenty of data.</b> Submit many jobs, follow them with squeue and keep every raw result.</p></div>
+      <div><span class="rt-n">05</span><p><b>Plot and interpret.</b> Draw every figure from the raw data with a script, then write up what it shows.</p></div>
+    </div>
+    <p class="t-lead wide rise">Rounds 1 and 2 were benchmark sweeps. Round 3 was a modelling problem, so step 3 meant comparing models and settings on the same data split.</p>
+    <aside class="notes">Before the results, here is how we approached every round. First we got onto the nodes and checked what we had. Then we read up on the problem and ran a baseline. For the benchmarks we changed one setting at a time with everything else fixed, submitted many jobs, tracked them with squeue and kept all the raw output. Every plot came from a script, and we wrote up our interpretation last. Round 3 was a modelling task rather than a benchmark, so the sweep became a fair comparison of models on the same data split.</aside>
+  </section>
+
   <!-- ===================== ROUND 1 · EPCC CIRRUS ===================== -->
 
-  <!-- 3. Round 1 opener -->
+  <!-- 4. Round 1 opener -->
   <section class="dk" data-round="1" style="gap:48px">
     <span class="rtag rise">Round 1 <i></i> EPCC Cirrus <i></i> Edinburgh</span>
     <h2 class="t-h op">HPL and HPCG on 1 to 4 Cirrus nodes, scored on throughput and energy efficiency</h2>
@@ -95,7 +109,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <aside class="notes">Each Cirrus node has two 144-core AMD EPYC 9825 processors. The cores are grouped into 24 chiplets of 12 cores, and Slurm exposes 8 NUMA domains. Half of the marks were for GFLOPS per watt. Every run therefore recorded energy from Slurm’s counters as well as GFLOPS.</aside>
   </section>
 
-  <!-- 4. HPL levers -->
+  <!-- 5. HPL levers -->
   <section class="dk" data-round="1" style="gap:34px">
     <h2 class="t-h2">On one node, problem size, block size and layout each added 15 to 24% to HPL speed, and compiler flags under 2%</h2>
     <div class="levers rise">
@@ -106,24 +120,24 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     </div>
     <p class="t-lead wide rise">HPL work grows as N³ while setup and communication grow as N². Raising N also lifted GFLOPS per watt from 4.18 to 7.84. Most of the runtime is DGEMM inside Cray LibSci, which compiler flags do not change.</p>
     <div class="srcl">HPL GFLOPS on one node, changing one parameter per sweep with the rest held fixed. Data from our submitted EPCC report, HPL sweeps of N, NB, MPI × OpenMP layout and compiler flags (jobs 563364 and 563656).</div>
-    <aside class="notes">We changed one HPL parameter at a time on one node, starting with problem size at N = 50,000. Going up to 250,000 added 22% to GFLOPS. A small run spends a large share of its time on overhead. Setup, panel factorisation and communication grow as N², but the useful matrix multiply grows as N³, so a larger N amortises that fixed cost. HPL describes this with N-half, the problem size at which a system reaches half its peak speed. Above it, speed climbs more slowly towards the peak, which is the flattening we see past 150,000. GFLOPS per watt rose even more, from 4.18 to 7.84, because Slurm also counts the setup energy. Block size added 24%, from NB 128 to 320. For the layout, 72 ranks of 4 threads was fastest and 32 ranks of 9 threads was most efficient, both ahead of 288 single-threaded ranks. Compiler flags moved the result by under 2%, because the time is spent in the vendor’s DGEMM library.</aside>
+    <aside class="notes">• HPL solves one dense system Ax = b by LU factorisation. We changed one parameter at a time on one node, starting from N = 50,000.<br>• N, problem size. The matrix is N × N, so it takes 8N² bytes and memory sets the upper limit. Work grows as about ⅔N³ while setup, panel factorisation and communication grow as N², so a bigger N amortises that fixed overhead. 50,000 → 250,000 added 22% to GFLOPS.<br>• Why small N is slow. The term is N-half, the problem size at which a system reaches half its peak speed. Above it, speed climbs more slowly towards the peak, which is the flattening we see past 150,000.<br>• NB, block size. HPL cuts the matrix into NB × NB blocks, deals them out to the MPI ranks and feeds them to DGEMM. Bigger blocks reuse more data from cache and send fewer messages, but blocks that are too big leave some ranks idle near the end. 128 → 320 added 24%, and 384 was slower again.<br>• P × Q, ranks and threads. The MPI ranks form a P × Q grid and each rank owns a share of the blocks. OpenMP threads split each rank’s DGEMM. 72 × 4 was fastest at +15% over 288 × 1, and 32 × 9 was most efficient at 8.94 GFLOPS per watt.<br>• Compiler flags. They only change HPL’s own code. The time is spent in Cray LibSci’s precompiled DGEMM, so flags moved the result by under 2%.<br>• GFLOPS is ⅔N³ divided by solve time. GFLOPS per watt is that solve work divided by the whole job’s Slurm energy, so setup energy counts too. That is why raising N lifted GFLOPS per watt from 4.18 to 7.84.</aside>
   </section>
 
-  <!-- 5. Scaling out costs energy -->
+  <!-- 6. Scaling out costs energy -->
   <section class="dk" data-round="1" style="gap:44px">
-    <h2 class="t-h2">At N = 100,000, four nodes solved the same problem 2.15 times faster but used 64% more energy</h2>
+    <h2 class="t-h2">Four nodes ran HPL 2.15 times faster, but GFLOPS per watt fell 39% and energy to solution rose 64%</h2>
     <div class="duo compact rise">
-      <div><span class="label" style="font-size:28px">1 node · 7.34 GFLOPS per watt</span><span class="bignum"><span data-count data-from="0" data-to="9193">9,193</span></span><span>GFLOPS</span>
+      <div><span class="label" style="font-size:28px">1 node · 9,193 GFLOPS</span><span class="bignum"><span data-count data-from="0" data-to="7.34" data-dec="2">7.34</span></span><span>GFLOPS per watt</span>
         <div class="kv"><div>Solve time<b>72.5 s</b></div><div>Average power<b>977 W</b></div><div>Energy<b>90,863 J</b></div></div></div>
-      <div><span class="label" style="font-size:28px">4 nodes · 4.47 GFLOPS per watt</span><span class="bignum bad"><span data-count data-from="0" data-to="19770">19,770</span></span><span>GFLOPS</span>
-        <div class="kv"><div>Solve time<b>33.7 s</b></div><div>Average power<b>3,111 W</b></div><div>Energy<b>149,308 J</b></div></div></div>
+      <div><span class="label" style="font-size:28px">4 nodes · 19,770 GFLOPS · 2.15 times faster</span><span class="bignum bad"><span data-count data-from="7.34" data-to="4.47" data-dec="2">4.47</span></span><span>GFLOPS per watt · 39% less efficient</span>
+        <div class="kv"><div>Solve time<b>33.7 s</b></div><div>Average power<b style="color:var(--bad)">3,111 W</b></div><div>Energy<b style="color:var(--bad)">149,308 J</b></div></div></div>
     </div>
     <p class="t-lead wide rise">Parallel efficiency was 54%. Power rose 3.2 times while job time fell only 1.9 times, so energy to solution rose. Extra nodes draw power for memory, network and cooling even when their cores are idle.</p>
     <div class="srcl">Strong scaling with N = 100,000, NB 128 and the same 16 × 16 grid of 256 MPI ranks spread over 1 to 4 nodes. GFLOPS per watt is solve work divided by whole-job Slurm energy, and average power is that energy over elapsed time. Data from our submitted EPCC report, HPL node sweep.</div>
-    <aside class="notes">We kept the problem fixed at N = 100,000 with the same 256 MPI ranks, and spread them over one to four nodes. Four nodes finished 2.15 times faster, which is 54% parallel efficiency, but used 64% more energy. GFLOPS per watt fell from 7.34 on one node to 4.98 on two, 4.51 on three and 4.47 on four. Two things cost energy. Each extra node draws power for memory, networking and cooling whether or not its cores are busy, and with 64 ranks per node most of its 288 cores sat idle. MPI traffic between nodes also takes time away from computation. So for an efficiency score, one node with a large N was the better choice.</aside>
+    <aside class="notes">• Set-up. Same N = 100,000 and the same 256 MPI ranks, spread over one to four nodes. This is strong scaling.<br>• Speed. Four nodes finished 2.15 times faster, which is 54% parallel efficiency against an ideal of four times.<br>• Efficiency. GFLOPS per watt fell from 7.34 on one node to 4.98 on two, 4.51 on three and 4.47 on four, 39% lower overall.<br>• Energy. Power rose 3.2 times while job time fell only 1.9 times, so energy to solution rose 64%.<br>• Why. Each extra node draws power for memory, networking and cooling even when its cores are idle, and with 64 ranks per node most of its 288 cores were idle. MPI traffic between nodes also takes time away from computation.<br>• Takeaway. For an efficiency score, one node with a large N was the better choice.</aside>
   </section>
 
-  <!-- 6. HPL vs HPCG -->
+  <!-- 7. HPL vs HPCG -->
   <section class="dk" data-round="1">
     <h2 class="t-h2">On one node, HPCG delivered under 1% of HPL’s GFLOPS at a similar power draw</h2>
     <div class="duo rise">
@@ -132,10 +146,10 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     </div>
     <p class="t-lead wide rise">HPL spends its time in dense matrix multiply, which reuses each operand many times from cache. HPCG spends its time in sparse matrix-vector products and a Gauss-Seidel smoother, which use most values once before moving on.</p>
     <div class="srcl">HPL job 571593 (N = 250,000). HPCG job 571314 (30-minute VALID run, 144 ranks × 2 cores). The GFLOPS ratio is 114 and the GFLOPS per watt ratio is 93. Data from hpl/results/SUMMARY.md and hpcg/results/SUMMARY.md.</div>
-    <aside class="notes">Both benchmarks ran on the same node type at a similar power draw. HPCG delivered 114 times fewer GFLOPS. The two codes do very different work per byte loaded. Dense matrix multiply reuses data from cache. Sparse kernels read each value and move on. Our expectation was that HPCG is limited by memory, and the next slide is how we tested that on Cirrus.</aside>
+    <aside class="notes">• Both benchmarks ran on one Cirrus node at a similar power draw.<br>• HPL reached 15,345 GFLOPS and HPCG 134.5, so HPCG delivered 114 times fewer GFLOPS.<br>• HPL spends its time in dense matrix multiply, which reuses each value many times from cache.<br>• HPCG spends its time in sparse kernels, which read each value once and move on.<br>• So we expected HPCG to be limited by memory. The next slide is how we tested that on Cirrus.</aside>
   </section>
 
-  <!-- 7. Half the cores -->
+  <!-- 8. Half the cores -->
   <section class="dk" data-round="1" style="gap:36px">
     <h2 class="t-h2">Running HPCG on half the cores kept its throughput and cut node power by 7%</h2>
     <div class="nodes2 rise">
@@ -155,7 +169,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <aside class="notes">We ran HPCG with 144 ranks, each given two cores but only one thread, so half the cores sat idle. Throughput rose slightly and power fell by about 7%, which gave 8% more GFLOPS per watt over a full 30-minute valid run. If removing half the workers does not slow the work, the workers were not the bottleneck. Memory bandwidth is the obvious candidate, but we had no direct measurement of it on Cirrus. That is the question we carried into Durham.</aside>
   </section>
 
-  <!-- 8. Round 1 results and changes -->
+  <!-- 9. Round 1 results and changes -->
   <section class="dk" data-round="1" style="gap:48px">
     <h2 class="t-h2">Round 1 results, and the workflow changes we made before round 2</h2>
     <div class="cols rise" style="grid-template-columns:1.12fr 1fr;gap:48px;align-items:stretch">
@@ -178,7 +192,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
 
   <!-- ===================== ROUND 2 · DiRAC DURHAM ===================== -->
 
-  <!-- 9. Round 2 opener -->
+  <!-- 10. Round 2 opener -->
   <section class="dk" data-round="2" style="gap:48px">
     <span class="rtag rise">Round 2 <i></i> DiRAC <i></i> Durham <i></i> 19–23 Oct</span>
     <h2 class="t-h op">Measured compute and bandwidth ceilings on two DiRAC nodes, and where Grid sits relative to them</h2>
@@ -194,7 +208,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <aside class="notes">The Durham brief asked how close each node gets to its vendor specification, and where the Grid lattice QCD benchmark sits between the compute and bandwidth limits. That was the measurement we had been missing on Cirrus. The two nodes differ in vendor and in core count, which made the comparison useful.</aside>
   </section>
 
-  <!-- 10. Ceilings -->
+  <!-- 11. Ceilings -->
   <section class="dk" data-round="2" style="gap:30px">
     <h2 class="t-h2">Both nodes met their compute specification, but measured bandwidth reached only 56% and 71% of the memory specification</h2>
     <div class="stack rise" style="--gap:18px">
@@ -211,7 +225,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <aside class="notes">LIKWID’s peak FLOP kernel slightly exceeded the base-clock specification on both nodes, which we attribute to turbo. Measured memory bandwidth reached 56% of the specification on DINE and 71% on DINE2. Dividing the two measured ceilings gives the ridge point. Any code below about 15 FLOPs per byte on DINE, or 23 on DINE2, is limited by memory.</aside>
   </section>
 
-  <!-- 11. Roofline -->
+  <!-- 12. Roofline -->
   <section class="dk" data-round="2" style="gap:36px">
     <h2 class="t-h2">Grid runs at 1.6 to 2.1 FLOPs per byte, an order of magnitude below either ridge point</h2>
     <div class="rise" style="display:grid;grid-template-columns:940px 1fr;gap:64px;align-items:center">
@@ -226,7 +240,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <aside class="notes">Hardware counters on full-node Grid runs put its intensity at 1.6 and 2.1 FLOPs per byte. That is an order of magnitude left of both ridge points, so Grid is bandwidth-bound on both nodes. At that intensity the bandwidth roof allows about 363 GFLOP/s on DINE and 826 on DINE2. Grid achieves 71% and 61% of those values. Its own memory benchmark reaches 98% and 89% of LIKWID’s triad, so the streaming itself is efficient. The caveat is that the counters cover the whole process, including setup, rather than one kernel.</aside>
   </section>
 
-  <!-- 12. Thread placement -->
+  <!-- 13. Thread placement -->
   <section class="dk" data-round="2" style="gap:40px">
     <h2 class="t-h2">An apparent compiler effect on DINE2 was caused by thread placement</h2>
     <div class="rise" style="display:grid;grid-template-columns:900px 1fr;gap:72px;align-items:center">
@@ -244,7 +258,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <aside class="notes">Early tuning data suggested that Clang beat GCC on DINE2, and that one node, gc007, was unusually fast. Both turned out to be thread placement. DINE2 numbers its cores even on one socket and odd on the other, so the default close binding splits neighbouring threads across sockets. Socket-ordered places gave up to 58% at L equals 24. Clang looked faster only because its OpenMP runtime happened to place threads differently.</aside>
   </section>
 
-  <!-- 13. Strong scaling -->
+  <!-- 14. Strong scaling -->
   <section class="dk" data-round="2" style="gap:36px">
     <h2 class="t-h2">Grid strong scaling is sublinear on both nodes, and less efficient on the node with less bandwidth per core</h2>
     <div class="rise" style="display:grid;grid-template-columns:940px 1fr;gap:64px;align-items:center">
@@ -259,7 +273,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <aside class="notes">Both nodes keep getting faster with more threads, but well below the ideal line. DINE reaches 17 times on 32 threads and DINE2 reaches 21 times on 64. DINE2 has twice the cores of DINE but only 1.7 times the bandwidth, so each core has less bandwidth available. That matches the lower efficiency, and it is what a bandwidth-bound code should show. We say consistent with rather than caused by, because a scaling curve alone cannot separate bandwidth from synchronisation or placement effects.</aside>
   </section>
 
-  <!-- 14. Round 2 process -->
+  <!-- 15. Round 2 process -->
   <section class="dk" data-round="2" style="gap:38px">
     <h2 class="t-h2">Round 2 applied the round 1 workflow changes and produced one rule for round 3</h2>
     <div class="cols" style="gap:72px;align-items:start">
@@ -285,7 +299,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
 
   <!-- ===================== ROUND 3 · UCL CONDENSER ===================== -->
 
-  <!-- 15. Round 3 opener -->
+  <!-- 16. Round 3 opener -->
   <section class="dk" data-round="3" style="gap:48px">
     <span class="rtag rise">Round 3 <i></i> UCL Condenser <i></i> Cloud <i></i> 26–30 Oct</span>
     <h2 class="t-h op">Tree models for co-amoxiclav resistance, run on a shared cloud VM</h2>
@@ -303,7 +317,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <aside class="notes">The UCL brief asked which tree model best identifies patients at risk of co-amoxiclav resistance, and what the main risk factors are. The data is synthetic. It is also not representative. It contains only adults aged 20 to 79, and White patients make up 17.6% of records against about 82% of the population. Any model trained on it may not generalise to the real population.</aside>
   </section>
 
-  <!-- 16. Model selection metric -->
+  <!-- 17. Model selection metric -->
   <section class="dk" data-round="3" style="gap:44px">
     <h2 class="t-h2">Ranking by ROC AUC first selected a tree that labelled every patient susceptible</h2>
     <div class="duo compact rise">
@@ -315,7 +329,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <aside class="notes">Our first draft ranked trees by ROC AUC. The chosen tree never predicted a resistance probability above one half, because only a quarter of patients are resistant. It was 76% accurate and flagged nobody. ROC AUC ignores the decision threshold, so it could not catch this. We switched to class weights and balanced accuracy, which weights both classes equally. This is the same kind of error as our first GFLOPS per watt formula in round 1.</aside>
   </section>
 
-  <!-- 17. Risk factors vs permutation null -->
+  <!-- 18. Risk factors vs permutation null -->
   <section class="dk" data-round="3" style="gap:40px">
     <h2 class="t-h2">Only age outperformed its permutation null</h2>
     <div class="rise" style="display:grid;grid-template-columns:1fr 470px;gap:80px;align-items:end">
@@ -347,7 +361,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <aside class="notes">To identify risk factors we scored each column on its own and compared it with 100 shuffled copies of itself. Shuffling keeps the column’s values but breaks any link with resistance, so the shuffled scores show what chance alone produces. We also added a column of random numbers. Only age beat its null, with an AUC of 0.71 against 0.54. Our first evidence for deprivation was a forest importance of 0.09. In the noise check, a column of random numbers scored 0.16 on the same measure, because impurity importance favours columns with many distinct values.</aside>
   </section>
 
-  <!-- 18. Final model -->
+  <!-- 19. Final model -->
   <section class="dk" data-round="3" style="gap:40px">
     <h2 class="t-h2">All competitive models were within one standard deviation, so we chose the tree a clinician can read</h2>
     <div class="rise" style="display:grid;grid-template-columns:820px 1fr;gap:80px;align-items:center">
@@ -377,7 +391,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <aside class="notes">The forest and the regression both score within one standard deviation of the class-balanced tree. With no meaningful accuracy difference, we chose the model a clinician can check by hand. The tree’s deprivation splits never change a prediction, so in practice it is an age rule. The 62 to 64 branch is most likely the tree fitting noise. The ranking held across four random seeds.</aside>
   </section>
 
-  <!-- 19. Security and reproducibility -->
+  <!-- 20. Security and reproducibility -->
   <section class="dk" data-round="3" style="gap:44px">
     <h2 class="t-h2">The data file arrived world-readable, so we restricted it and our outputs before running any analysis</h2>
     <div class="rise" style="display:grid;grid-template-columns:960px 1fr;gap:64px;align-items:center">
@@ -406,7 +420,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
 
   <!-- ===================== DISCUSSION ===================== -->
 
-  <!-- 20. Cross-round finding -->
+  <!-- 21. Cross-round finding -->
   <section class="dk" style="gap:48px">
     <h2 class="t-h2">In each round, a control experiment changed our first interpretation</h2>
     <div class="tbl rise">
@@ -419,7 +433,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <aside class="notes">Across all three rounds the same thing happened. Our first reading came from the measurement method rather than from the system. The energy formula favoured short runs. The OpenMP runtime decided where threads went. Impurity importance favoured many-valued columns. In each case a control experiment exposed it. That is the main methodological lesson we take from the qualifier.</aside>
   </section>
 
-  <!-- 21. Limitations -->
+  <!-- 22. Limitations -->
   <section class="dk" style="gap:48px">
     <h2 class="t-h2">Limitations of these results</h2>
     <div class="lim rise">
@@ -436,7 +450,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <aside class="notes">Each round has limits we want to state plainly. On Cirrus, we saw extra power on multiple nodes but did not measure which components drew it. On DINE, our intensity numbers come from whole-process counters, and the memory specification assumes DIMM speeds we could not check. For the UCL model, the test set is small and the data is not representative, so the model should not be read as a clinical result.</aside>
   </section>
 
-  <!-- 22. Team -->
+  <!-- 23. Team -->
   <section class="dk" style="gap:48px">
     <h2 class="t-h2">Rounds 2 and 3 used four fixed roles, each with a written guide</h2>
     <div class="cols rise" style="grid-template-columns:auto 1fr;gap:96px;align-items:center">
@@ -459,7 +473,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <aside class="notes">From round 2 we worked to four fixed roles, with a written guide for each role. In Durham we held two short syncs a day, and at UCL an evening check-in. Every work session left a log entry recording what failed and how we fixed it. The round 3 roles shown here are the ones we described in our UCL video.</aside>
   </section>
 
-  <!-- 23. Conclusions -->
+  <!-- 24. Conclusions -->
   <section class="dk" style="gap:44px">
     <h2 class="t-h2">Conclusions</h2>
     <div class="concl rise">
