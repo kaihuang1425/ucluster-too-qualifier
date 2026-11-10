@@ -1,6 +1,6 @@
 # UCLuster Too · CIUK 2026 qualifier talk
 
-These are the slides for our CIUK Cluster Challenge 2026 qualifier presentation. Slides 1 to 14 are the five-minute talk, covering all three sub-challenges in the order we did them. Slides 15 to 24 are backup for questions.
+These are the slides for our CIUK Cluster Challenge 2026 qualifier presentation. Slides 1 to 13 are the five-minute talk, starting with EPCC after the title. Slides 14 to 24 are backup for questions, starting with the overview.
 
 **Live site** → https://ucluster-too-qualifier.vercel.app
 **Edit it on the page** → https://ucluster-too-qualifier.vercel.app/?edit
@@ -10,16 +10,16 @@ Every change to `main` updates the live site within about a minute. Nothing need
 
 ## The five-minute talk
 
-The talk is every slide before the backup section. Each talk slide's speaker notes hold its script, and the scripts add up to 4 minutes 51 seconds.
+The talk is every slide before the backup section. Each talk slide's speaker notes hold its script and show the estimated timing.
 
 - **Rehearse.** Press N on any slide to see its script, how long it takes, when it should end and the running total. On a phone, open the block under each slide.
 - **Present on a call.** Press P to open the presenter view in its own window. It shows the script in large type, a stopwatch, when the slide should end and what comes next, and its arrow keys move the deck. In Teams choose Share, then Window, and pick the deck window, so the presenter view stays private. Keep the deck window uncovered, because a browser stops drawing a window that is fully hidden. Both windows must be in the same browser.
 - **Timing.** The estimate assumes 140 words a minute and counts each number as 2.5 words, because "2.15" or "64%" takes longer to say than one word. If you speak faster or slower, treat the times as relative.
 - **Script and background.** In a note, the plain text is what we say. Text inside `<span class="bg">` is background for questions. It shows smaller under the script and is not timed.
 - **Staying in time.** The page editor shows the script's seconds and the talk's total while you type. The automatic check prints the timing for every slide and warns when the total passes 5:00.
-- **Backup slides.** These are sections with `data-backup`. The counter shows them as "Backup 3 / 10" and they do not count towards the time. To move a slide between the talk and the backup, move its whole `section` block and add or remove `data-backup`.
+- **Backup slides.** These are sections with `data-backup`. The counter shows them as "Backup 3 / 11" and they do not count towards the time. To move a slide between the talk and the backup, move its whole `section` block and add or remove `data-backup`.
 
-Each talk slide leads to the next. Round 1 ends with a hypothesis about memory bandwidth, round 2 measures it and finds a confound, and round 3 applies the rule that came from that. When you change a slide, read its script together with the one before and the one after.
+Each round opens with the question it addresses and closes with what the tests showed. When you change a slide, read its script together with the one before and the one after.
 
 ## Edit on the page
 
@@ -49,7 +49,7 @@ You need to be a collaborator on this repository to publish. Anyone else can sti
 Use this route to add or remove slides, or for any change to the layout.
 
 1. Open [`index.html`](index.html) on GitHub and click the pencil icon. Pressing `.` opens a fuller editor instead.
-2. Find your slide by its number. Each slide starts with a comment such as `<!-- 5. Scaling out at constant energy -->`, and the list of all slides is at the top of the file.
+2. Find your slide by its number. Each slide starts with a comment such as `<!-- 3. Scaling out costs energy -->`, and the list of all slides is at the top of the file.
 3. Change the words between the tags. Leave `class="..."` and `style="..."` as they are.
 4. Click **Commit changes** and choose **Create a new branch for this commit and start a pull request**.
 5. Open the pull request. The automatic check runs in about three minutes. Vercel also posts a preview link on the pull request within a minute. It shows the deck with your change, and anyone can open it without an account. Look at it on a phone before you merge.
