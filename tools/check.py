@@ -256,6 +256,33 @@ def main():
             deck.wait_for_function("n => DECK.cur() === n", arg=want, timeout=5000)
             if not deck.evaluate("DECK.slides[DECK.cur()].hasAttribute('data-backup')") and "Slide" not in pres.inner_text(".ans .at"):
                 error("Q&A: the answer does not name the slide it switched to")
+            # every answer comes as text and as bullet points, and each question switches on its own
+            for i, why in pres.evaluate("""DECK_QA.map((x, i) => [i + 1,
+                    !x.say || !x.say.trim() ? 'has no text answer' :
+                    x.bullets && !(Array.isArray(x.bullets) && x.bullets.length && x.bullets.every(b => Array.isArray(b) && b.length === 2 && b.every(s => typeof s === 'string' && s.trim())))
+                      ? 'has bullets that are not pairs of a label and a sentence' : '']).filter(r => r[1])"""):
+                error(f"Q&A: question {i} in qa.js {why}")
+            shape = "(() => { const a = document.getElementById('ans'); return [a.querySelectorAll('ul.pts li').length, a.querySelectorAll('p.s').length]; })()"
+            n_pts = pres.evaluate("DECK_QA.find(x => /placement/.test(x.q)).bullets.length")
+            if pres.evaluate(shape) != [0, 1]:
+                error("Q&A: an answer should open as text")
+            pres.click(".fmt [data-v=bullets]")
+            if pres.evaluate(shape) != [n_pts, 0]:
+                error("Q&A: the Bullets button should show the answer's bullet points in place of the text")
+            pres.keyboard.press("Tab")
+            if pres.evaluate(shape) != [0, 1]:
+                error("Q&A: Tab should switch the answer back to text")
+            pres.keyboard.press("Tab"); pres.keyboard.press("Escape"); pres.wait_for_timeout(150)      # bullets for this question, then the full list
+            first = pres.evaluate("DECK_QA[0].bullets.length")
+            if pres.evaluate(shape) != [0, 1]:
+                error("Q&A: choosing bullets for one question should leave the other questions as text")
+            pres.click(".fmt [data-v=bullets]"); pres.click("#fmtall"); pres.keyboard.press("ArrowDown")
+            if pres.evaluate(shape)[1] != 0 or pres.evaluate(shape)[0] == 0:
+                error("Q&A: \"Use for all\" should show every answer as bullet points")
+            pres.click(".fmt [data-v=text]"); pres.click("#fmtall"); pres.keyboard.press("ArrowUp")
+            if pres.evaluate(shape) != [0, 1] or first < 2:
+                error("Q&A: \"Use for all\" on Text should bring every answer back to text")
+            pres.keyboard.press("q"); pres.keyboard.type("thred placment"); pres.wait_for_timeout(200)
             n_opt = pres.evaluate("document.querySelectorAll('#opt button').length")
             if n_opt != deck.evaluate("DECK.slides.length - DECK.talk.length") + 1:
                 error("Q&A: the list of optional slides does not match the deck's backup slides")

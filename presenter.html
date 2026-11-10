@@ -12,7 +12,8 @@
                editor (?edit), which is where it gets published like any other edit.
        Q&A     the prepared questions from qa.js with their answers, most likely first. Type to search. The search
                forgives typos and partial words, and it matches related forms of a word, so difference finds
-               differently. Enter shows the slide that goes with the selected answer, and the
+               differently. Each answer comes as text and as bullet points, and Tab switches between them.
+               Enter shows the slide that goes with the selected answer, and the
                list of optional slides switches the deck to any backup slide.
      This page holds no slide content of its own. The deck window sends it the current slide over a BroadcastChannel,
      so both windows have to be open in the same browser. -->
@@ -81,6 +82,19 @@
   .ans .link { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
   .ans .at { font-size: 13px; color: var(--dim); }
   .ans p.s { font-size: calc(var(--fs, 30px) * .8); line-height: 1.5; margin: 0 0 16px; max-width: 36em; }
+  .ans .fmt { display: flex; align-items: center; gap: 2px; margin: 0 0 14px; }
+  .ans .fmt button { font-size: 13px; padding: 6px 12px; border-radius: 8px; background: var(--surface); color: var(--muted); }
+  .ans .fmt button[aria-pressed="true"] { background: var(--surface-3, var(--surface-2)); color: var(--ink); font-weight: 500; }
+  .ans .fmt button[data-v="text"] { border-radius: 8px 0 0 8px; } .ans .fmt button[data-v="bullets"] { border-radius: 0 8px 8px 0; }
+  .ans .fmt .ghost { background: transparent; margin-left: 8px; color: var(--soft); }
+  .ans .fmt span { font: 400 12px var(--mono); color: var(--dim); margin-left: 6px; }
+  .ans ul.pts { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: .7em; font-size: calc(var(--fs, 30px) * .8); line-height: 1.45; max-width: 36em; }
+  .ans ul.pts li { padding-left: 1em; position: relative; }
+  .ans ul.pts li::before { content: ""; position: absolute; left: 0; top: .62em; width: .34em; height: .34em; border-radius: 50%; background: var(--accent); }
+  .ans ul.pts b { font-weight: 600; margin-right: .2em; }
+  .ans code { font: 400 .88em var(--mono); background: var(--surface); border-radius: 5px; padding: .08em .3em; }
+  .ans p.chk { margin: 0 0 16px; padding: 10px 14px; border-radius: 10px; background: var(--ask-soft); color: var(--ink); font-size: 14.5px; line-height: 1.5; max-width: 46em; }
+  .ans p.chk b { display: block; font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ask); margin-bottom: 3px; }
   .ans h4 { margin: 16px 0 8px; font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
   .ans ul.n { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
   .ans ul.n li { font: 400 13px var(--mono); background: var(--surface); border-radius: 8px; padding: 5px 9px; }
@@ -89,7 +103,7 @@
   .ans dd { margin: 2px 0 0; color: var(--muted); font-size: 15px; line-height: 1.5; }
   .ans p.z { margin: 0; color: var(--soft); font-size: 14.5px; line-height: 1.55; max-width: 46em; }
   .none { padding: 18px 16px; color: var(--dim); font-size: 14px; }
-  @media (max-width: 720px) { #qa { grid-template-columns: 1fr; grid-template-rows: 46% 1fr; } .find { border-right: 0; border-bottom: 1px solid var(--hair); } }
+  @media (max-width: 720px) { #qa { grid-template-columns: minmax(0, 1fr); grid-template-rows: 46% minmax(0, 1fr); } .find { border-right: 0; border-bottom: 1px solid var(--hair); } }
 </style>
 </head>
 <body>
@@ -290,7 +304,7 @@
     return 0;
   }
   var index = QA.map(function (x) {
-    return [[words(x.q), 3], [words(x.topic + ' ' + (x.numbers || []).join(' ')), 2], [words(x.say), 1],
+    return [[words(x.q), 3], [words(x.topic + ' ' + (x.numbers || []).join(' ')), 2], [words(x.say + ' ' + (x.bullets || []).map(function (b) { return b.join(' '); }).join(' ')), 1],
             [words((x.followups || []).map(function (f) { return f.q + ' ' + f.a; }).join(' ')), 1], [words(x.background), 0.7]];
   });
   function search(text) {
@@ -328,14 +342,30 @@
     var x = QA[shown[sel]];
     if (!x) { $('ans').innerHTML = QA.length ? '' : '<div class="none">qa.js holds no questions.</div>'; return; }
     var name = slideName(x), n = where[x.slide], here = st && n === st.n;
+    var two = !!(x.bullets && x.bullets.length), v = two ? viewOf(x) : 'text', note = v === 'bullets' ? (x.checkShort || x.check) : (x.check || x.checkShort);
     $('ans').innerHTML = '<h2>' + esc(x.q) + '</h2><div class="link">' +
       (n != null ? '<button class="go" id="jump"' + (here ? ' disabled' : '') + '>' + (here ? 'This slide is showing' : 'Show its slide') + '</button><span class="at">' + esc(name) + '</span>' : '<span class="at">Open the deck to link this answer to its slide.</span>') + '</div>' +
-      '<p class="s">' + esc(x.say) + '</p>' +
+      (two ? '<div class="fmt" role="group" aria-label="Answer as"><button data-v="text" aria-pressed="' + (v === 'text') + '">Text</button><button data-v="bullets" aria-pressed="' + (v === 'bullets') + '">Bullets</button>' +
+        '<button class="ghost" id="fmtall" title="Show every answer this way">Use for all</button><span>Tab switches</span></div>' : '') +
+      (v === 'bullets' ? '<ul class="pts">' + x.bullets.map(function (b) { return '<li><b>' + esc(b[0]) + '</b> ' + rich(b[1]) + '</li>'; }).join('') + '</ul>'
+                       : '<p class="s">' + rich(x.say) + '</p>') +
+      (note ? '<p class="chk"><b>Check before the pitch</b> ' + rich(note) + '</p>' : '') +
       (x.numbers && x.numbers.length ? '<h4>Numbers to hold</h4><ul class="n">' + x.numbers.map(function (v) { return '<li>' + esc(v) + '</li>'; }).join('') + '</ul>' : '') +
       (x.followups && x.followups.length ? '<h4>If they push</h4><dl>' + x.followups.map(function (f) { return '<div><dt>' + esc(f.q) + '</dt><dd>' + esc(f.a) + '</dd></div>'; }).join('') + '</dl>' : '') +
       (x.background ? '<h4>From zero</h4><p class="z">' + esc(x.background) + '</p>' : '');
     var j = $('jump'); if (j) j.onclick = jump;
+    [].forEach.call($('ans').querySelectorAll('.fmt [data-v]'), function (b) { b.onclick = function () { setView(x, b.getAttribute('data-v')); }; });
+    var all = $('fmtall'); if (all) all.onclick = function () { view = { all: v, one: {} }; keepView(); answer(); };
   }
+  // Each answer comes as text and as bullet points. A choice belongs to its question, and "Use for all" makes it the default.
+  var view = { all: 'text', one: {} };
+  try { var saved = JSON.parse(localStorage.getItem('presenter-qa-view') || 'null'); if (saved && saved.one) view = { all: saved.all === 'bullets' ? 'bullets' : 'text', one: saved.one }; } catch (e) {}
+  function keepView() { try { localStorage.setItem('presenter-qa-view', JSON.stringify(view)); } catch (e) {} }
+  function viewOf(x) { return view.one[x.q] || view.all; }
+  function setView(x, v) { if (v === view.all) delete view.one[x.q]; else view.one[x.q] = v; keepView(); answer(); }
+  function flip() { var x = QA[shown[sel]]; if (x && x.bullets && x.bullets.length) setView(x, viewOf(x) === 'text' ? 'bullets' : 'text'); }
+  // `code` and *italics* are the only marks an answer may carry
+  function rich(s) { return esc(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*([^*\s][^*]*)\*/g, '<em>$1</em>'); }
   function jump() { var x = QA[shown[sel]]; if (x && where[x.slide] != null) send({ type: 'go', n: where[x.slide] }); }
   function pick(k) {
     if (k < 0 || k >= shown.length) return;
@@ -403,6 +433,7 @@
       if (e.key === 'ArrowDown') { e.preventDefault(); pick(sel + 1); }
       else if (e.key === 'ArrowUp') { e.preventDefault(); pick(sel - 1); }
       else if (e.key === 'Enter') { e.preventDefault(); jump(); }
+      else if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); flip(); }
       else if (e.key === 'Escape') { if ($('q').value) { $('q').value = ''; sel = 0; list(); } else setTab('script'); }
       else if (e.key === 'PageDown') { e.preventDefault(); step(1); }
       else if (e.key === 'PageUp') { e.preventDefault(); step(-1); }
