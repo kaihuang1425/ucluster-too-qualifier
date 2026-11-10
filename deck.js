@@ -229,7 +229,7 @@ var DECK_DATA = {
     var s = slides[cur], a = s.querySelector('.notes'), c = a ? a.cloneNode(true) : null, bg = c && c.querySelector('.bg'), k = talk.indexOf(s), t = timing();
     if (bg) c.removeChild(bg);
     chan.postMessage({ type: 'state', n: cur, k: k, talk: talk.length, label: counter.textContent, title: headOf(s), next: headOf(slides[cur + 1]),
-      script: c ? c.innerHTML : '', bg: bg ? bg.innerHTML : '', secs: k < 0 ? 0 : t.rows[k], ends: k < 0 ? 0 : t.ends[k], total: t.total, limit: t.limit,
+      script: c ? c.innerHTML : '', bg: bg ? bg.innerHTML : '', secs: k < 0 ? 0 : t.rows[k], ends: k < 0 ? 0 : t.ends[k], total: t.total, limit: t.limit, wpm: t.wpm,
       slides: slides.map(function (x) { return { title: headOf(x), backup: x.hasAttribute('data-backup') }; }) });
   }
   // The presenter's Q&A names a slide by something only that slide holds. This finds which slide that is now.

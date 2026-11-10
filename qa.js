@@ -6,6 +6,7 @@
    say        the answer to say aloud, about 30 seconds.
    numbers    the figures to hold. followups are the likely next questions. background explains the idea from zero.
    This file is public once it is on the site, like the slides. */
+window.DECK_QA_EDIT = 'https://github.com/kaihuang1425/ucluster-too-qualifier/edit/main/qa.js';   // where the presenter's Edit answers link goes
 window.DECK_QA = [
  {
   "q": "You say memory bandwidth limits HPCG. How do you know?",
@@ -203,6 +204,103 @@ window.DECK_QA = [
    }
   ],
   "background": "A decision tree is a short list of yes or no questions. Depth 3 means at most three questions. A random forest averages 200 such trees, which is steadier but cannot be read as one rule. A standard deviation here is how much the score moves between cross-validation folds."
+ },
+ {
+  "q": "You tested each factor alone. What happens when they are all in one model?",
+  "likely": "Very likely",
+  "topic": "Round 3 · UCL",
+  "slide": ".nz",
+  "say": "We did both, and they agree. Alone, each factor went into a logistic regression and a depth-2 tree, scored against shuffled copies. Together, we fitted one logistic regression for adjusted odds ratios, and a random forest that was also given two columns of random numbers. In the regression only age has an interval clear of 1, at 1.59 per decade. In the forest, shuffling age cuts the test AUC by 0.20, and shuffling any other column cuts it by 0.004 or less, the same as the random columns.",
+  "numbers": [
+   "age: 1.59 per decade (1.44 to 1.76)",
+   "forest AUC drop: age 0.202 ± 0.033",
+   "deprivation 0.004 ± 0.008",
+   "random columns 0.001 and −0.003"
+  ],
+  "followups": [
+   {
+    "q": "Why put random columns in the forest?",
+    "a": "They show what a column with no information scores. A real risk factor has to clear them, and only age did."
+   },
+   {
+    "q": "Which factors went into the joint regression?",
+    "a": "Age, sex, surgery in the past year, deprivation and ethnicity. Trust and diagnosis were left out, because with about 4 patients per trust there is nothing to estimate."
+   }
+  ],
+  "background": "Adjusted means the effect of one factor with the others held fixed. Permutation importance is how much a model's score falls when one column is shuffled, measured on patients the model has not seen."
+ },
+ {
+  "q": "How well does the tree do on the test set? How many does it miss and how many false alarms?",
+  "likely": "Very likely",
+  "topic": "Round 3 · UCL",
+  "slide": "svg.tree",
+  "say": "On the 250 held-out patients, 60 are resistant. The tree flags 116 patients. 39 of them are resistant and 77 are not, and it misses 21. So it finds 65% of resistant patients, and about one flag in three is right. Its plain accuracy is 61%, lower than the 76% of the first tree, which flagged nobody. That is the trade we chose.",
+  "numbers": [
+   "flags 116 of 250",
+   "39 resistant, 77 false alarms",
+   "misses 21 of 60",
+   "recall 0.65, precision 0.34",
+   "accuracy 0.608, balanced accuracy 0.622"
+  ],
+  "followups": [
+   {
+    "q": "Is one in three good enough?",
+    "a": "For a screening flag that prompts a lab test, a false alarm costs a test and a miss costs a failed treatment. Whether one in three is acceptable is a clinical judgement that we did not make."
+   },
+   {
+    "q": "And the forest?",
+    "a": "It flags 117, of which 44 are resistant. Recall 0.73, precision 0.38."
+   }
+  ],
+  "background": "Recall is the share of resistant patients the model flags. Precision is the share of flags that are right. Raising one usually lowers the other."
+ },
+ {
+  "q": "Would a single split on age do just as well?",
+  "likely": "Very likely",
+  "topic": "Round 3 · UCL",
+  "slide": "svg.tree",
+  "say": "In cross-validation, yes. The class-balanced trees of depth 1 and depth 2 score 0.655, against 0.659 for depth 3, which is a tie. On the test set the depth-1 tree did better. It flagged 44 of the 60 resistant patients, against 39. The difference is the 62 to 64 branch, which the deeper tree calls lower risk. We chose by cross-validation before looking at the test set, and we kept that choice. A single split would be just as defensible.",
+  "numbers": [
+   "depth 1 and 2: 0.655 ± 0.018",
+   "depth 3: 0.659 ± 0.032",
+   "test: depth 1 flags 44 of 60, depth 3 flags 39",
+   "best depth moved between 1 and 3 across seeds"
+  ],
+  "followups": [
+   {
+    "q": "Why not switch to depth 1 after seeing the test result?",
+    "a": "Choosing a model by its test score would spend the test set. It would stop being an independent check."
+   },
+   {
+    "q": "Why does deeper do worse?",
+    "a": "All the signal is in age, so depth beyond 2 or 3 can only fit noise. Depth 8 is the worst class-balanced tree in every seed."
+   }
+  ],
+  "background": "A held-out test set is only a fair check if it played no part in choosing the model. That is why selection used cross-validation on the training patients."
+ },
+ {
+  "q": "Exactly what was wrong with the first efficiency formula?",
+  "likely": "Very likely",
+  "topic": "Whole talk",
+  "slide": ".tbl",
+  "say": "We divided the GFLOPS that HPL reports by the job's average power. GFLOPS covers only the timed solve, and the average power covers the whole job, including setup. That overstates efficiency by the ratio of job time to solve time. For a short run the ratio is large. At N = 50,000 the solve took 11 seconds of a 32-second job. At N = 250,000 it was 1,124 of 1,151 seconds. The corrected score divides the work done in the solve by the whole job's energy.",
+  "numbers": [
+   "first: solve GFLOPS ÷ average job power",
+   "corrected: solve work ÷ whole-job joules",
+   "N = 50,000: 11 s solve in a 32 s job",
+   "N = 250,000: 1,124 s in 1,151 s"
+  ],
+  "followups": [
+   {
+    "q": "Does counting setup energy penalise you?",
+    "a": "Yes, slightly. It makes every figure conservative, and it does so the same way for every run."
+   },
+   {
+    "q": "Is solve work the same as GFLOPS?",
+    "a": "Solve work is GFLOPS multiplied by solve time, which is two thirds of N cubed operations. Dividing it by joules gives GFLOP per joule, the same unit as GFLOPS per watt."
+   }
+  ],
+  "background": "Power is energy per second. If two quantities are measured over different time windows, their ratio depends on how long each window is, and it no longer describes the machine."
  },
  {
   "q": "Could this model be used on real patients?",
@@ -416,6 +514,176 @@ window.DECK_QA = [
   "background": "QCD is the theory of the strong force that holds protons and neutrons together. Lattice QCD puts space and time on a grid so a computer can work it out. The work is mostly sweeping through very large arrays, which is why memory matters."
  },
  {
+  "q": "You ran many tests. Could one of them pass by luck?",
+  "likely": "Likely",
+  "topic": "Round 3 · UCL",
+  "slide": ".nz",
+  "say": "Yes, and one nearly did. Seven factors other than age, each in two models, give 14 scores. Each has a 1 in 20 chance of clearing its band by luck, so we expect about 0.7 lucky passes. The diagnosis-chapter tree scored 0.524 against a band top of 0.519. The regression on the same factor did not pass. That is why a factor had to pass in both models.",
+  "numbers": [
+   "14 scores, each 1 in 20",
+   "about 0.7 expected by luck",
+   "diagnosis tree 0.524 vs band 0.519",
+   "diagnosis regression 0.510 vs band 0.547"
+  ],
+  "followups": [
+   {
+    "q": "Why would diagnosis be a lucky pass?",
+    "a": "There are 964 different diagnosis codes for 1,000 patients. We grouped them by first letter into chapters, and a grouping like that is where a lucky split turns up."
+   },
+   {
+    "q": "Did you correct for multiple testing?",
+    "a": "Not with a formal correction. We required both models to pass, and we report the near-miss."
+   }
+  ],
+  "background": "If you test 20 things that have no effect at the 5% level, one will look significant on average. Requiring two different models to agree makes a lucky pass much rarer."
+ },
+ {
+  "q": "Why 100 shuffles, and what does the 95% line mean?",
+  "likely": "Likely",
+  "topic": "Round 3 · UCL",
+  "slide": ".nz",
+  "say": "For each factor we made 100 shuffled copies and scored each one the same way as the real column. The band shows the score that 95% of those copies stay below. A factor passes if its real score is above that, which is a p-value of 0.05 or less. With 100 copies the smallest p-value we can report is 0.01, and age reached it. The script has an option to run more copies.",
+  "numbers": [
+   "100 shuffled copies per factor",
+   "pass = above 95% of copies (p ≤ 0.05)",
+   "age p = 0.01, the smallest possible",
+   "about 2 minutes on a laptop"
+  ],
+  "followups": [
+   {
+    "q": "Why does every factor have a different band?",
+    "a": "The score a column can reach by luck depends on its shape. 238 trusts leave far more room for a lucky score than a yes or no column. The band tops run from 0.519 for surgery to 0.551 for deprivation."
+   }
+  ],
+  "background": "A p-value here is the share of shuffled copies that score at least as well as the real column. A small one means chance rarely does this well."
+ },
+ {
+  "q": "One deprivation group looked significant. Is deprivation really not a risk factor?",
+  "likely": "Likely",
+  "topic": "Round 3 · UCL",
+  "slide": ".nz",
+  "say": "We cannot rule it out, and this data does not show it. In the adjusted regression, deprivation quintile 3 has an odds ratio of 0.60 with an interval of 0.36 to 0.97, just under 1. But there are 10 intervals for factors other than age, each with a 1 in 20 chance of missing 1 by luck. There is also no gradient. Quintiles 2 to 5 give 0.69, 0.60, 0.92 and 0.90, and the raw resistance rates are 26, 21, 20, 29 and 25%. A real effect would rise or fall steadily.",
+  "numbers": [
+   "quintile 3: 0.60 (0.36 to 0.97)",
+   "quintiles 2 to 5: 0.69, 0.60, 0.92, 0.90",
+   "resistance by quintile: 26.4, 20.7, 20.0, 28.9, 24.6%",
+   "alone: 0.537 vs band 0.551"
+  ],
+  "followups": [
+   {
+    "q": "So is deprivation ruled out?",
+    "a": "No. Not established is different from ruled out. With 1,000 patients we cannot exclude a modest effect."
+   }
+  ],
+  "background": "IMD quintiles split areas into five groups by deprivation. Quintile 1 is the most deprived. A gradient means the rate keeps moving the same way from group to group."
+ },
+ {
+  "q": "Why did the forest's importance score mislead you, and what did you use in its place?",
+  "likely": "Likely",
+  "topic": "Round 3 · UCL",
+  "slide": ".nz",
+  "say": "The first forest gave deprivation an importance of 0.09, and we read that as evidence. That score is impurity importance, which rewards columns with many distinct values, because they offer more places to split. In our check forest a continuous column of random numbers scored 0.16, more than deprivation at 0.07. We then used permutation importance on held-out patients, which does not have that bias. There deprivation sits level with the random columns.",
+  "numbers": [
+   "first forest: age 0.91, deprivation 0.09",
+   "check forest: random continuous 0.16",
+   "deprivation 0.07, random five-level 0.05",
+   "permutation: deprivation 0.004 ± 0.008"
+  ],
+  "followups": [
+   {
+    "q": "Is impurity importance useless?",
+    "a": "No. It is quick and it ranked age first. It is unreliable for comparing columns of different shapes."
+   }
+  ],
+  "background": "Impurity importance adds up how much each column's splits tidy the training data. Permutation importance asks how much worse the model does on new patients when a column is scrambled."
+ },
+ {
+  "q": "Which models did you compare, and how?",
+  "likely": "Likely",
+  "topic": "Round 3 · UCL",
+  "slide": "svg.tree",
+  "say": "Five kinds of tree model at depths 1 to 8, so 40 models. They were plain trees, class-balanced trees, bagging, random forests and gradient boosting. We split the data once into 750 training and 250 test patients, keeping the share of resistant patients the same. We ranked models by 5-fold cross-validated balanced accuracy on the training patients. The test set was used only to report the chosen models.",
+  "numbers": [
+   "5 model kinds × depths 1 to 8",
+   "750 train, 250 test, stratified",
+   "5-fold cross-validation, seed 42",
+   "forest 200 trees, bagging and boosting 100"
+  ],
+  "followups": [
+   {
+    "q": "Why did boosting and bagging rank so low?",
+    "a": "They were not class-weighted. They reached 73 to 79% accuracy by rarely predicting resistance, with recall of 23% at most. It is the same failure as the plain tree, so it is not a fair verdict on those methods."
+   },
+   {
+    "q": "Why not the logistic regression?",
+    "a": "The brief asked for tree models. We ran the regression as a baseline. It scores 0.660 ± 0.036, so a straight line in age does as well as our tree, and we say so."
+   }
+  ],
+  "background": "Stratified means each split keeps the same share of resistant patients as the whole data set."
+ },
+ {
+  "q": "Does the result depend on the random split?",
+  "likely": "Likely",
+  "topic": "Round 3 · UCL",
+  "slide": "svg.tree",
+  "say": "We repeated the whole run with four seeds, which change the train and test split, the folds and the models' own randomness. The class-balanced tree was the best single tree every time, and the random forest was the best model overall every time. Age carried over 90% of the importance every time. The best tree depth moved between 1 and 3, which is why we treat shallow trees as tied.",
+  "numbers": [
+   "seeds 42, 1, 7, 2026",
+   "best tree: depth 3, 3, 2, 1",
+   "tree 0.659, 0.653, 0.638, 0.684",
+   "forest 0.670, 0.664, 0.655, 0.693"
+  ],
+  "followups": [
+   {
+    "q": "The forest led in all four. Is that not a real difference?",
+    "a": "It may be. The lead is 0.009 to 0.017 each time, under one fold-to-fold standard deviation. The four runs reuse the same 1,000 patients, so they are not independent evidence."
+   }
+  ],
+  "background": ""
+ },
+ {
+  "q": "How did you show that placement, not the compiler, made the difference?",
+  "likely": "Likely",
+  "topic": "Whole talk",
+  "slide": ".tbl",
+  "say": "We ran both compilers with the same explicit thread placement. With socket-ordered places, GCC caught up with Clang. The mechanism is that DINE2 numbers its cores even on one socket and odd on the other, so the default close binding puts neighbouring Grid threads on opposite sockets. Clang looked faster only because LLVM's OpenMP runtime placed threads differently. Socket ordering raised throughput by up to 58% at L = 24.",
+  "numbers": [
+   "OMP_PLACES={0}:32:2,{1}:32:2",
+   "up to 58% at L = 24",
+   "best: 864 GFLOP/s on DINE2, 361 on DINE"
+  ],
+  "followups": [
+   {
+    "q": "Did placement explain anything else?",
+    "a": "Yes. One node, gc007, had looked unusually fast for the same reason. Once placement was fixed, using both hardware threads per core added a further 9% on DINE2."
+   },
+   {
+    "q": "What else affected the result?",
+    "a": "Both nodes use first-touch memory placement. Interleaving pages across sockets cost 14 to 23%."
+   }
+  ],
+  "background": "A fair comparison changes one thing. Here the compiler and the thread placement had changed together, so the first comparison could not say which one mattered."
+ },
+ {
+  "q": "How were you able to go back and re-check earlier results?",
+  "likely": "Likely",
+  "topic": "Whole talk",
+  "slide": ".tbl",
+  "say": "We kept the raw record of every run. From round 2, each job stored its git hash, loaded modules, build flags and host, and repeats ran as separate jobs. The overnight Grid campaign kept all 97 raw records. At UCL the script reproduces the committed numbers exactly, and a rerun the same day was byte-identical. So when a result looked wrong we could recompute it from the logs.",
+  "numbers": [
+   "205 jobs in round 2",
+   "97 overnight runs, every raw record kept",
+   "UCL rerun byte-identical"
+  ],
+  "followups": [
+   {
+    "q": "What did you exclude?",
+    "a": "Early DINE2 LIKWID runs that were pinned incorrectly. We also never combined runs from different builds or placements in one scaling curve."
+   }
+  ],
+  "background": ""
+ },
+ {
   "q": "What does “odds rise 1.59 times per decade” mean?",
   "likely": "Possible",
   "topic": "Round 3 · UCL",
@@ -508,12 +776,150 @@ window.DECK_QA = [
   "likely": "Possible",
   "topic": "Round 2 · Grid",
   "slide": "svg.sock",
-  "say": "Each DINE2 core can run two hardware threads. Our best DINE2 figure, 864 GFLOP/s, used all 128 with socket-ordered placement at L = 24.",
+  "say": "Each DINE2 core can run two hardware threads. Once placement was fixed, using both added a further 9% on DINE2, so our best figure there, 864 GFLOP/s, used all 128 at L = 24. On DINE the same setting cost about 30%, so its best run used 32 threads.",
   "numbers": [
    "864 GFLOP/s",
+   "SMT: +9% on DINE2, −30% on DINE",
    "GCC, 128 SMT threads, L = 24"
   ],
   "followups": [],
   "background": "SMT, also called hyper-threading, lets one core run two threads that share its hardware."
+ },
+ {
+  "q": "Why use ROC AUC here when you rejected it for choosing the model?",
+  "likely": "Possible",
+  "topic": "Round 3 · UCL",
+  "slide": ".nz",
+  "say": "The two questions are different. Here we ask whether a factor ranks resistant patients above susceptible ones better than chance. That needs no threshold, and 0.5 means chance, so ROC AUC fits. For choosing a model that has to flag patients, the threshold matters, and that is where ROC AUC let through a tree that flagged nobody.",
+  "numbers": [
+   "0.5 = chance",
+   "age 0.708 in the regression, 0.685 in the tree"
+  ],
+  "followups": [],
+  "background": ""
+ },
+ {
+  "q": "Which columns did you leave out, and why not use the other antibiotic results?",
+  "likely": "Possible",
+  "topic": "Round 3 · UCL",
+  "slide": ".nz",
+  "say": "We kept only what is known before the lab result. The ciprofloxacin and gentamicin results come from the same sample, so using them would be using the answer. Co-resistance is weak here anyway, at 28% against 24% and 22% against 24%. We also left out the identifier, date of birth because age comes from it, the organism because it is always E. coli, and the specimen date because all 36 dates fall within five weeks.",
+  "numbers": [
+   "cipro-resistant: 28% vs 24%",
+   "gentamicin-resistant: 22% vs 24%",
+   "36 specimen dates, 25 May to 29 June 2014",
+   "964 diagnosis codes, grouped by first letter"
+  ],
+  "followups": [
+   {
+    "q": "What is leakage?",
+    "a": "Giving a model information that would not be available when the prediction is needed. It makes results look better than they would be in use."
+   }
+  ],
+  "background": ""
+ },
+ {
+  "q": "How strong is the age effect, and is age a cause?",
+  "likely": "Possible",
+  "topic": "Round 3 · UCL",
+  "slide": ".nz",
+  "say": "Resistance rises from 8% at ages 20 to 40 to 41% at ages 71 to 79. Each decade multiplies the odds by 1.59. Age alone ranks patients with an AUC of 0.71. We do not claim cause. The data is synthetic, so this is a pattern its generator put in, and it shows an association only.",
+  "numbers": [
+   "8.4% (335 patients) at 20 to 40",
+   "25.9% (352) at 41 to 60",
+   "37.5% (168) at 61 to 70",
+   "40.7% (145) at 71 to 79"
+  ],
+  "followups": [
+   {
+    "q": "What about sex?",
+    "a": "Male sex has an odds ratio of 1.24 with an interval of 0.91 to 1.69, which includes 1. We cannot rule out a modest effect."
+   }
+  ],
+  "background": ""
+ },
+ {
+  "q": "How reliable are the confidence intervals?",
+  "likely": "Possible",
+  "topic": "Round 3 · UCL",
+  "slide": ".nz",
+  "say": "They are Wald intervals, which are approximations, and so are permutation p-values. We fitted the regression to a tight tolerance, because the default setting in scikit-learn stops early enough to move three of the odds ratios by 0.01. With 1,000 patients the intervals are wide for everything except age.",
+  "numbers": [
+   "exact fit, tolerance 1e-10",
+   "default tolerance moved 3 odds ratios by 0.01",
+   "1,000 patients"
+  ],
+  "followups": [],
+  "background": "A Wald interval is the estimate plus or minus about two standard errors. It assumes the estimate is roughly normally distributed, which holds better with more data."
+ },
+ {
+  "q": "Why is deprivation in the tree if it is noise?",
+  "likely": "Possible",
+  "topic": "Round 3 · UCL",
+  "slide": "svg.tree",
+  "say": "The brief asks about age and deprivation, so the model was given those two columns. The fitted tree has two deprivation splits, but both leaves under each one predict the same class, so they change no prediction. That is why the drawing leaves them out. Adding sex and recent surgery did not help either. The best single tree with all four columns scored 0.655.",
+  "numbers": [
+   "features: age and deprivation",
+   "2 deprivation splits, no change in prediction",
+   "with sex and surgery: tree 0.655, forest 0.673"
+  ],
+  "followups": [],
+  "background": ""
+ },
+ {
+  "q": "The tree's test score is below its cross-validation score. Is it overfitted?",
+  "likely": "Possible",
+  "topic": "Round 3 · UCL",
+  "slide": "svg.tree",
+  "say": "The tree scores 0.659 in cross-validation and 0.622 on the test set. That is a drop of 0.037, a little over one fold-to-fold standard deviation, on a single split of 250 patients. The forest goes the other way, from 0.670 to 0.675. So we read it as noise in a small test set, with some cost from the 62 to 64 branch.",
+  "numbers": [
+   "tree: CV 0.659, test 0.622",
+   "forest: CV 0.670, test 0.675",
+   "fold SD 0.032 for the tree"
+  ],
+  "followups": [],
+  "background": ""
+ },
+ {
+  "q": "Where exactly are the tree's cut-offs?",
+  "likely": "Possible",
+  "topic": "Round 3 · UCL",
+  "slide": "svg.tree",
+  "say": "The fitted splits are at 48.5, 64.5 and 61.5 years. Ages are whole years, so the drawing shows them as 49 or over, 65 or over, and 62 to 64. Under 49 is lower risk, 49 to 61 is flagged, 62 to 64 is lower risk and 65 or over is flagged.",
+  "numbers": [
+   "48.5, 64.5, 61.5",
+   "class weights: balanced"
+  ],
+  "followups": [],
+  "background": ""
+ },
+ {
+  "q": "Were these control experiments, or just corrections?",
+  "likely": "Possible",
+  "topic": "Whole talk",
+  "slide": ".tbl",
+  "say": "They are three different kinds of check. On Cirrus it was a check of the arithmetic, comparing the time window each term covers. In Durham it was a controlled comparison, with placement held the same for both compilers. At UCL it was a negative control, a column of random numbers, together with shuffled copies of each factor. What they share is that each tested our method before we credited the result to the system.",
+  "numbers": [
+   "Cirrus: time-window check",
+   "Durham: controlled comparison",
+   "UCL: negative control and permutation"
+  ],
+  "followups": [],
+  "background": "A negative control is something you know has no effect. If your method says it has one, the method is at fault."
+ },
+ {
+  "q": "What have you not checked?",
+  "likely": "Possible",
+  "topic": "Whole talk",
+  "slide": ".tbl",
+  "say": "Four things, and they are on our limitations slide. On Cirrus we did not isolate which components drew the extra power on several nodes. In Durham our Grid counters cover the whole process and not one kernel, and we did not verify the memory module speeds behind the specification. At UCL the test set has only 60 resistant patients, so we cannot claim one competitive model is better.",
+  "numbers": [
+   "power not split by component",
+   "counters cover the whole process",
+   "DIMM speeds not verified",
+   "60 resistant test patients"
+  ],
+  "followups": [],
+  "background": ""
  }
 ];

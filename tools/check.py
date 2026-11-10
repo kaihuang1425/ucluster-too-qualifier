@@ -263,6 +263,33 @@ def main():
             pres.keyboard.press("ArrowRight"); pres.wait_for_timeout(200)
             if pres.evaluate("document.getElementById('qa').hidden") or deck.evaluate("DECK.cur()") != last:
                 error("presenter view: next on the last talk slide should open the Q&A and leave the deck where it is")
+            # "This slide only" lists the questions linked to the slide on show
+            pres.click("#here"); pres.wait_for_timeout(150)
+            linked = sum(1 for s in sels if found.get(s) == last)
+            if pres.evaluate("document.querySelectorAll('#res li').length") != linked:
+                error("Q&A: \"This slide only\" does not list exactly the questions linked to the slide on show")
+            pres.click("#here")
+            # A script edited in the presenter view has to arrive in the page editor as one unpublished change
+            deck.evaluate("DECK.go(1)")
+            pres.click("#t-script"); pres.wait_for_function("document.getElementById('pos').textContent.indexOf('Slide 2 ') === 0", timeout=5000)
+            pres.wait_for_function("!document.getElementById('edit').hidden", timeout=8000)
+            pres.click("#edit"); pres.keyboard.press("End"); pres.keyboard.type(" Presenter edit 42.", delay=2); pres.click("#edit")
+            pres.wait_for_function("!document.getElementById('edited').hidden", timeout=5000)
+            if "edited" not in pres.inner_text("#due"):
+                error("presenter view: an edited script should show its new timing")
+            ed2 = ctx.new_page(); ed2.on("pageerror", lambda e: error("page editor after a presenter edit: JavaScript error: " + str(e)))
+            ed2.goto(base + "?edit#2")
+            ed2.wait_for_function("() => { const s = document.querySelector('.ed-sum'); return (s && !/Loading/.test(s.textContent)) || document.querySelector('.ed-fail'); }", timeout=15000)
+            ed2.wait_for_timeout(400)
+            ops = ed2.evaluate("window.__deckEditor.ops().filter(o => o.kind === 'inner')")
+            if len(ops) != 1 or "Presenter edit 42." not in ops[0]["new"] or ops[0]["slide"] != 2:
+                error("presenter view: the edited script did not reach the page editor as one change on slide 2")
+            elif '<span class="bg">' in ops[0]["old"] and '<span class="bg">' not in ops[0]["new"]:
+                error("presenter view: editing a script dropped that slide's background notes")
+            ed2.close()
+            pres.click("#undo"); pres.wait_for_function("document.getElementById('edited').hidden", timeout=5000)
+            if pres.evaluate("localStorage.getItem('deck-edit:v1')"):
+                error("presenter view: Undo edit left a draft behind")
         except Exception as e:
             error("presenter view: it did not follow the deck (" + str(e).splitlines()[0] + ")")
         ctx.close()
