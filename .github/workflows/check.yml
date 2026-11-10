@@ -17,24 +17,22 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Playwright's own image already holds Chromium, WebKit and their system libraries.
+    # Installing those with apt on a plain runner sometimes took over 15 minutes and stopped the job before any test ran.
+    container:
+      image: mcr.microsoft.com/playwright/python:v1.62.0-noble
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-
-      - name: Install Playwright with Chromium and WebKit
-        run: |
-          pip install playwright==1.62.0
-          python -m playwright install --with-deps chromium webkit
+      - name: Install the Playwright package that matches the image
+        run: python3 -m pip install --break-system-packages playwright==1.62.0
 
       - uses: actions/setup-node@v5
         with:
           node-version: "22"
 
       - name: Slides fit, numbers match, phones and iPad work
-        run: python tools/check.py
+        run: python3 tools/check.py
 
       - name: Page editor works end to end
-        run: python tools/test_editor.py
+        run: python3 tools/test_editor.py

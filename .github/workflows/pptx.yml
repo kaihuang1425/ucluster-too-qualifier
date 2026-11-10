@@ -7,9 +7,6 @@ on:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 concurrency:
   group: pptx
   cancel-in-progress: true
@@ -18,27 +15,45 @@ jobs:
   export:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+    # Playwright's own image already holds Chromium and its system libraries, so nothing is installed with apt.
+    container:
+      image: mcr.microsoft.com/playwright/python:v1.62.0-noble
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-
-      - name: Install Playwright with Chromium, and python-pptx
-        run: |
-          pip install playwright==1.62.0 python-pptx==1.0.2
-          python -m playwright install --with-deps chromium
+      - name: Install Playwright and python-pptx
+        run: python3 -m pip install --break-system-packages playwright==1.62.0 python-pptx==1.0.2
 
       - name: Export the deck to PowerPoint
-        run: python tools/export_pptx.py
+        run: python3 tools/export_pptx.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pptx
+          path: export/*.pptx
+          if-no-files-found: error
+
+  release:
+    needs: export
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: pptx
+          path: export
 
       - name: Attach the files to the pptx-latest release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           gh release view pptx-latest >/dev/null 2>&1 || \
-            gh release create pptx-latest --title "PowerPoint copy of the deck" --notes "Rebuilt from main after every change." --latest=false
+            gh release create pptx-latest --title "PowerPoint copy of the deck" --notes "Rebuilt from main after every change." --latest=false --target "$GITHUB_SHA"
           gh release upload pptx-latest export/UCLuster-Too-qualifier.pptx export/UCLuster-Too-qualifier-pictures.pptx --clobber
           gh release edit pptx-latest --notes "Rebuilt from main at commit ${GITHUB_SHA::7} on $(date -u '+%d %b %Y, %H:%M') UTC.
 

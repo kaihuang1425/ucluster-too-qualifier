@@ -5,9 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0E0E0F">
 <title>Presenter view · UCLuster Too</title>
-<!-- PRESENTER VIEW. Press P on the deck to open this in its own window. It shows the script, the timing and what
-     comes next, and it drives the deck window. In a call, share only the deck window, so this one stays private.
-     It holds no slide content of its own. The deck window sends it the current slide over a BroadcastChannel,
+<!-- PRESENTER VIEW. Press P on the deck to open this in its own window. In a call, share only the deck window,
+     so this one stays private.
+       Script  the current slide's script, its timing, a stopwatch and what comes next. Arrow keys move the deck.
+               Edit script changes the wording here. The edit is kept in this browser as a draft for the page
+               editor (?edit), which is where it gets published like any other edit.
+       Q&A     the prepared questions from qa.js with their answers, most likely first. Type to search. The search
+               forgives typos and partial words. Enter shows the slide that goes with the selected answer, and the
+               list of optional slides switches the deck to any backup slide.
+     This page holds no slide content of its own. The deck window sends it the current slide over a BroadcastChannel,
      so both windows have to be open in the same browser. -->
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,33 +22,78 @@
 <style>
   html, body { height: 100%; }
   body { margin: 0; background: var(--bg); color: var(--ink); display: flex; flex-direction: column; overflow: hidden; }
-  .top { display: flex; align-items: center; gap: 18px; padding: 14px 22px; border-bottom: 1px solid var(--hair); flex: none; }
+  .top { display: flex; align-items: center; gap: 14px; padding: 12px 20px; border-bottom: 1px solid var(--hair); flex: none; }
+  .ptabs { display: flex; gap: 2px; padding: 3px; border-radius: 12px; background: var(--surface); flex: none; }
+  .ptabs button { background: transparent; color: var(--soft); padding: 7px 14px; border-radius: 9px; }
+  .ptabs button[aria-selected="true"] { background: var(--surface-3); color: var(--ink); }
   .pos { font: 500 15px var(--mono); color: var(--accent); white-space: nowrap; }
-  .ttl { flex: 1; min-width: 0; font-size: 16px; color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ttl { flex: 1; min-width: 0; font-size: 15px; color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .clock { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; }
-  .clock b { font: 500 34px var(--mono); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .clock b { font: 500 32px var(--mono); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
   .clock span { font: 400 13px var(--mono); color: var(--dim); }
   .clock.late b { color: var(--bad); }
   button { font: inherit; color: var(--ink); background: var(--surface-2); border: 0; border-radius: 10px; padding: 8px 14px; font-size: 14px; cursor: pointer; }
   button:hover { background: var(--surface-3); }
-  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   button.ghost { background: transparent; color: var(--soft); }
-  main { flex: 1; min-height: 0; overflow: auto; padding: 28px 22px 20px; }
+  button.go { background: var(--accent); color: var(--accent-ink); font-weight: 500; }
+  main { flex: 1; min-height: 0; overflow: auto; padding: 26px 20px 20px; }
   .say { max-width: calc(var(--fs, 30px) * 34); margin: 0 auto; font-size: var(--fs, 30px); line-height: 1.5; letter-spacing: -.005em; }
   .bg { max-width: calc(var(--fs, 30px) * 34); margin: 26px auto 0; padding-top: 18px; border-top: 1px solid var(--hair); font-size: calc(var(--fs, 30px) * .58); line-height: 1.55; color: var(--soft); }
   .bg:empty { display: none; }
   .wait { max-width: 30em; margin: 12vh auto 0; text-align: center; color: var(--muted); font-size: 20px; line-height: 1.5; }
-  .wait button { margin-top: 18px; background: var(--accent); color: var(--accent-ink); font-weight: 500; }
-  .bot { display: flex; align-items: center; gap: 14px; padding: 12px 22px; border-top: 1px solid var(--hair); flex: none; }
+  .wait button { margin-top: 18px; }
+  .bot { display: flex; align-items: center; gap: 12px; padding: 10px 20px; border-top: 1px solid var(--hair); flex: none; }
   .next { flex: 1; min-width: 0; font-size: 15px; color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .next i { font-style: normal; color: var(--dim); margin-right: 8px; }
-  .hint { padding: 8px 22px; font-size: 13px; color: var(--dim); background: var(--surface); flex: none; display: flex; gap: 12px; align-items: center; }
+  .hint { padding: 8px 20px; font-size: 13px; color: var(--dim); background: var(--surface); flex: none; display: flex; gap: 12px; align-items: center; }
   .hint span { flex: 1; }
   [hidden] { display: none !important; }
+  .say[contenteditable] { outline: 2px solid var(--accent); outline-offset: 10px; border-radius: 6px; }
+  .edited { max-width: calc(var(--fs, 30px) * 34); margin: 18px auto 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 14px; color: var(--ask); }
+  .edited span { flex: 1; min-width: 14em; }
+
+  /* Q&A */
+  #qa { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(260px, 36%) minmax(0, 1fr); }
+  .find { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--hair); }
+  .find input { margin: 14px 14px 8px; padding: 11px 14px; border-radius: 12px; border: 0; background: var(--surface-2); color: var(--ink); font: inherit; font-size: 16px; }
+  .find input::placeholder { color: var(--dim); }
+  .count { padding: 0 8px 6px 16px; font: 400 12px var(--mono); color: var(--dim); display: flex; align-items: center; gap: 8px; }
+  .count span { flex: 1; }
+  .count button, .count a { font: 400 12px var(--mono); padding: 4px 8px; border-radius: 7px; color: var(--soft); text-decoration: none; }
+  .count button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .res { flex: 1; min-height: 0; overflow: auto; list-style: none; margin: 0; padding: 0 8px 8px; }
+  .res li { padding: 10px 10px; border-radius: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 5px; }
+  .res li[aria-selected="true"] { background: var(--surface-2); }
+  .res li:hover { background: var(--surface); }
+  .res b { font-weight: 500; font-size: 15px; line-height: 1.3; }
+  .res small { font-size: 12px; color: var(--dim); display: flex; gap: 8px; flex-wrap: wrap; }
+  .tier1 { color: var(--bad); } .tier2 { color: var(--accent); }
+  .extra { border-top: 1px solid var(--hair); padding: 10px 14px 12px; flex: none; max-height: 38%; overflow: auto; }
+  .extra h4 { margin: 0 0 8px; font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+  .extra div { display: flex; flex-direction: column; gap: 3px; }
+  .extra button { font-size: 13px; padding: 6px 10px; border-radius: 8px; text-align: left; background: transparent; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .extra button:hover { background: var(--surface); color: var(--ink); }
+  .extra button[aria-current="true"] { background: var(--surface-2); color: var(--ink); }
+  .ans { min-height: 0; overflow: auto; padding: 18px 24px 24px; }
+  .ans h2 { margin: 0 0 12px; font-size: 22px; font-weight: 500; line-height: 1.25; letter-spacing: -.01em; }
+  .ans .link { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .ans .at { font-size: 13px; color: var(--dim); }
+  .ans p.s { font-size: calc(var(--fs, 30px) * .8); line-height: 1.5; margin: 0 0 16px; max-width: 36em; }
+  .ans h4 { margin: 16px 0 8px; font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+  .ans ul.n { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .ans ul.n li { font: 400 13px var(--mono); background: var(--surface); border-radius: 8px; padding: 5px 9px; }
+  .ans dl { margin: 0; display: flex; flex-direction: column; gap: 10px; max-width: 46em; }
+  .ans dt { font-weight: 500; font-size: 15px; }
+  .ans dd { margin: 2px 0 0; color: var(--muted); font-size: 15px; line-height: 1.5; }
+  .ans p.z { margin: 0; color: var(--soft); font-size: 14.5px; line-height: 1.55; max-width: 46em; }
+  .none { padding: 18px 16px; color: var(--dim); font-size: 14px; }
+  @media (max-width: 720px) { #qa { grid-template-columns: 1fr; grid-template-rows: 46% 1fr; } .find { border-right: 0; border-bottom: 1px solid var(--hair); } }
 </style>
 </head>
 <body>
 <div class="top">
+  <div class="ptabs" role="tablist"><button role="tab" id="t-script" aria-selected="true">Script</button><button role="tab" id="t-qa" aria-selected="false">Q&amp;A</button></div>
   <span class="pos" id="pos"></span>
   <span class="ttl" id="ttl"></span>
   <span class="clock" id="clock"><b id="time">0:00</b><span id="due"></span></span>
@@ -50,23 +101,43 @@
   <button id="reset" class="ghost">Reset</button>
 </div>
 <div class="hint" id="hint"><span>In Teams choose Share, then Window, and pick the deck window. This window is not shared, so only you see the script. Keep the deck window uncovered.</span><button class="ghost" id="hide">Hide</button></div>
-<main>
-  <div class="wait" id="wait">Waiting for the deck. Open it in another window of this browser, then press P there or come back here.<br><button id="open">Open the deck</button></div>
+
+<main id="script">
+  <div class="wait" id="wait">Waiting for the deck. Open it in another window of this browser, then press P there or come back here.<br><button id="open" class="go">Open the deck</button></div>
   <div class="say" id="say" hidden></div>
+  <div class="edited" id="edited" hidden><span>Edited here. It is saved in this browser and is not live until it is published.</span><button id="pub" class="go">Publish in the editor</button><button id="undo" class="ghost">Undo edit</button></div>
   <div class="bg" id="bg" hidden></div>
 </main>
+
+<div id="qa" hidden>
+  <div class="find">
+    <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Search the questions, for example placement or accuracy" aria-label="Search the questions">
+    <div class="count"><span id="count"></span><button id="here" class="ghost" aria-pressed="false">This slide only</button><a id="editqa" hidden target="_blank" rel="noopener">Edit answers</a></div>
+    <ul class="res" id="res" role="listbox" aria-label="Questions"></ul>
+    <div class="extra"><h4>Optional slides</h4><div id="opt"></div></div>
+  </div>
+  <div class="ans" id="ans"></div>
+</div>
+
 <div class="bot">
   <button id="prev" aria-label="Previous slide">‹ Back</button>
   <span class="next" id="next"></span>
+  <button id="edit" class="ghost" hidden>Edit script</button>
   <button id="smaller" class="ghost" aria-label="Smaller text">A−</button>
   <button id="larger" class="ghost" aria-label="Larger text">A+</button>
   <button id="fwd" aria-label="Next slide">Next ›</button>
 </div>
+<script src="qa.js"></script>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var chan = 'BroadcastChannel' in window ? new BroadcastChannel('ucluster-deck') : null;
-  var st = null, started = 0, banked = 0, running = false;
+  var st = null, started = 0, banked = 0, running = false, tab = 'script';
+  var QA = window.DECK_QA || [], where = {}, shown = [], sel = 0, hereOnly = false;
+  var NOTES = {}, editing = false, KEY = 'deck-edit:v1';      // the page editor keeps its unpublished edits under this key
+
+  /* ---------- script ---------- */
   function clock(v) { v = Math.max(0, Math.round(v)); return Math.floor(v / 60) + ':' + ('0' + v % 60).slice(-2); }
   function elapsed() { return banked + (running ? (Date.now() - started) / 1000 : 0); }
   function tick() {
@@ -76,26 +147,189 @@
     $('clock').classList.toggle('late', !!st && st.k >= 0 && e > st.ends + 5);
   }
   function show(m) {
+    var first = !st;
+    if (editing && st && m.n !== st.n) endEdit();      // the deck moved on, so the edit is saved first
+    if (editing) { st = m; return; }
     st = m;
     $('wait').hidden = true; $('say').hidden = false; $('bg').hidden = false;
     $('pos').textContent = m.k < 0 ? m.label : 'Slide ' + (m.k + 1) + ' of ' + m.talk;
     $('ttl').textContent = m.title;
-    $('say').innerHTML = m.script || '<span style="color:var(--dim)">No script for this slide.</span>';
+    var p = pending(m.n), text = p ? plain(splitNote(p.new)[0]) : null;
+    if (p) $('say').textContent = text; else $('say').innerHTML = m.script || '<span style="color:var(--dim)">No script for this slide.</span>';
+    $('edited').hidden = !p;
     $('bg').innerHTML = m.bg || '';
-    $('due').textContent = m.k < 0 ? 'backup, not timed' : 'about ' + Math.round(m.secs) + ' s · ends at ' + clock(m.ends) + ' of ' + clock(m.total);
-    $('next').innerHTML = m.next ? '<i>Next</i>' + m.next.replace(/</g, '&lt;') : '<i>Last slide</i>';
-    document.querySelector('main').scrollTop = 0;
-    tick();
+    due(text);
+    $('next').innerHTML = m.k === m.talk - 1 ? '<i>Next</i>Q&amp;A, with answers and the optional slides' : m.next ? '<i>Next</i>' + esc(m.next) : '<i>Last slide</i>';
+    $('script').scrollTop = 0;
+    if (first) send({ type: 'resolve', sels: QA.map(function (x) { return x.slide; }) });
+    optional(); if (tab === 'qa' && hereOnly) list(); else answer(); tick();
+  }
+
+  // the time line under the stopwatch. An edited script is timed the same way the deck times scripts.
+  function secsOf(t) { var w = 0; t.split(/\s+/).forEach(function (x) { if (x) w += /\d/.test(x) ? 2.5 : 1; }); return w / ((st && st.wpm) || 140) * 60; }
+  function due(text) {
+    var m = st; if (!m) return;
+    if (m.k < 0) { $('due').textContent = 'optional slide, not timed'; return; }
+    if (text == null) { $('due').textContent = 'about ' + Math.round(m.secs) + ' s · ends at ' + clock(m.ends) + ' of ' + clock(m.total); return; }
+    var s = secsOf(text);
+    $('due').textContent = 'about ' + Math.round(s) + ' s, edited · whole talk ' + clock(m.total - m.secs + s) + ' of ' + clock(m.limit);
+  }
+
+  /* ---------- editing a script ---------- */
+  // The page editor finds a note by its position in index.html, so this reads the same file the same way.
+  function loadSource() {
+    Promise.all([fetch('index.html', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw 0; return r.text(); }), import('./lib/htmlmap.mjs')]).then(function (a) {
+      var src = a[0]; NOTES = {};
+      a[1].stageMap(src).list.forEach(function (e) { if (e.name === 'aside' && /\bnotes\b/.test(e.cls || '') && e.sec >= 0) NOTES[e.sec] = { si: e.si, inner: src.slice(e.innerStart, e.innerEnd) }; });
+      $('edit').hidden = false; if (st) show(st);
+    }).catch(function () { $('edit').hidden = true; });
+  }
+  function draft() { try { var d = JSON.parse(localStorage.getItem(KEY) || 'null'); return d && d.v === 1 ? d : null; } catch (e) { return null; } }
+  function keep(d) { try { if (!Object.keys(d.units).length && !d.data && !d.pr) localStorage.removeItem(KEY); else localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }
+  function splitNote(inner) { var i = inner.indexOf('<span class="bg">'); return i < 0 ? [inner, ''] : [inner.slice(0, i), inner.slice(i)]; }
+  function plain(html) { var d = document.createElement('div'); d.innerHTML = html; return d.textContent.replace(/\s+/g, ' ').trim(); }
+  function pending(n) { var s = NOTES[n], d = draft(), u = s && d && d.units && d.units[s.si]; return u && u.old === s.inner ? u : null; }
+  function saveEdit(n, text) {
+    var s = NOTES[n]; if (!s) return;
+    var d = draft() || { v: 1, units: {}, data: null, pr: null, title: '' }, prev = d.units[s.si];
+    var bg = prev && prev.old === s.inner ? splitNote(prev.new)[1] : splitNote(s.inner)[1];        // background notes stay as they are
+    if (text === plain(splitNote(s.inner)[0]) && bg === splitNote(s.inner)[1]) delete d.units[s.si];
+    else d.units[s.si] = { old: s.inner, new: text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + bg };
+    keep(d);
+  }
+  var editingSlide = null;
+  function startEdit() {
+    if (!st || !NOTES[st.n]) return;
+    editing = true; editingSlide = st.n; $('edit').textContent = 'Done';
+    var s = $('say'); s.textContent = s.textContent;
+    s.setAttribute('contenteditable', 'plaintext-only'); if (s.contentEditable !== 'plaintext-only') s.setAttribute('contenteditable', 'true');
+    s.focus();
+  }
+  function endEdit() {
+    if (!editing) return;
+    editing = false; $('edit').textContent = 'Edit script';
+    var s = $('say'), text = s.textContent.replace(/\s+/g, ' ').trim(); s.removeAttribute('contenteditable');
+    if (text && editingSlide != null) saveEdit(editingSlide, text);
   }
   function send(m) { if (chan) chan.postMessage(m); }
-  function step(d) { send({ type: 'step', d: d }); if (d > 0 && !running && !banked && st && st.n === 0) toggle(); }   // leaving the title starts the stopwatch
+  function step(d) {
+    if (d > 0 && st && st.k === st.talk - 1 && tab === 'script') { setTab('qa'); return; }      // after the last talk slide comes Q&A, not an optional slide
+    send({ type: 'step', d: d }); if (d > 0 && !running && !banked && st && st.n === 0) toggle();   // leaving the title starts the stopwatch
+  }
   function toggle() {
     if (running) { banked = elapsed(); running = false; } else { started = Date.now(); running = true; }
     $('run').textContent = running ? 'Pause' : (banked ? 'Resume' : 'Start');
     tick();
   }
-  if (chan) { chan.onmessage = function (e) { if (e.data && e.data.type === 'state') show(e.data); }; send({ type: 'hello' }); }
-  else $('wait').firstChild.nodeValue = 'This browser cannot link two windows. Use Chrome, Edge, Firefox or Safari 15.4 or later.';
+
+  /* ---------- Q&A ---------- */
+  // Search that forgives typos and partial words. Every word typed has to match something in the question,
+  // and a match in the question itself counts for more than one in the answer.
+  function words(s) { return String(s || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9.% ]+/g, ' ').split(/\s+/).filter(Boolean); }
+  function distance(a, b, max) {            // Damerau-Levenshtein, cut off above max
+    if (Math.abs(a.length - b.length) > max) return max + 1;
+    var prev2 = null, prev = [], cur, i, j;
+    for (j = 0; j <= b.length; j++) prev[j] = j;
+    for (i = 1; i <= a.length; i++) {
+      cur = [i]; var best = cur[0];
+      for (j = 1; j <= b.length; j++) {
+        var c = a[i - 1] === b[j - 1] ? 0 : 1;
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + c);
+        if (prev2 && i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) cur[j] = Math.min(cur[j], prev2[j - 2] + 1);
+        if (cur[j] < best) best = cur[j];
+      }
+      if (best > max) return max + 1;
+      prev2 = prev; prev = cur;
+    }
+    return prev[b.length];
+  }
+  function wordScore(t, w) {
+    if (w === t) return 1;
+    if (w.indexOf(t) === 0) return 0.9;
+    if (t.length >= 4 && w.indexOf(t) > 0) return 0.7;
+    if (t.length >= 4) {
+      var max = t.length >= 7 ? 2 : 1, head = w.slice(0, Math.max(t.length, Math.min(w.length, t.length + 1)));
+      var d = Math.min(distance(t, w, max), distance(t, head, max));      // a typo in the whole word, or in the start of a longer one
+      if (d <= max) return d === 1 ? 0.6 : 0.45;
+    }
+    return 0;
+  }
+  var index = QA.map(function (x) {
+    return [[words(x.q), 3], [words(x.topic + ' ' + (x.numbers || []).join(' ')), 2], [words(x.say), 1],
+            [words((x.followups || []).map(function (f) { return f.q + ' ' + f.a; }).join(' ')), 1], [words(x.background), 0.7]];
+  });
+  function search(text) {
+    var toks = words(text), out = [];
+    if (!toks.length) return QA.map(function (x, i) { return i; });
+    index.forEach(function (fields, i) {
+      var total = 0, ok = toks.every(function (t) {
+        var best = 0;
+        fields.forEach(function (f) { for (var k = 0; k < f[0].length; k++) { var s = wordScore(t, f[0][k]) * f[1]; if (s > best) best = s; } });
+        total += best; return best > 0;
+      });
+      if (ok) out.push([total, i]);
+    });
+    return out.sort(function (a, b) { return b[0] - a[0] || a[1] - b[1]; }).map(function (r) { return r[1]; });
+  }
+  function slideName(x) {
+    var n = where[x.slide];
+    if (n == null || !st || !st.slides || !st.slides[n]) return '';
+    var s = st.slides[n];
+    return (s.backup ? 'Optional slide' : 'Slide ' + (n + 1)) + ' · ' + s.title;
+  }
+  function tierClass(x) { return x.likely === 'Very likely' ? 'tier1' : x.likely === 'Likely' ? 'tier2' : ''; }
+  function list() {
+    shown = search($('q').value);
+    if (hereOnly && st) shown = shown.filter(function (i) { return where[QA[i].slide] === st.n; });
+    if (sel >= shown.length) sel = 0;
+    $('count').textContent = hereOnly ? shown.length + ' for this slide' : $('q').value.trim() ? shown.length + ' of ' + QA.length + ' match' : QA.length + ' questions, most likely first';
+    $('res').innerHTML = shown.length ? shown.map(function (i, k) {
+      var x = QA[i];
+      return '<li role="option" data-k="' + k + '" aria-selected="' + (k === sel) + '"><b>' + esc(x.q) + '</b><small><span class="' + tierClass(x) + '">' + esc(x.likely) + '</span><span>' + esc(x.topic) + '</span></small></li>';
+    }).join('') : '<div class="none">' + (hereOnly ? 'No prepared question is linked to this slide.' : 'No question matches. Try one word, such as energy, tree or socket.') + '</div>';
+    answer();
+  }
+  function answer() {
+    var x = QA[shown[sel]];
+    if (!x) { $('ans').innerHTML = QA.length ? '' : '<div class="none">qa.js holds no questions.</div>'; return; }
+    var name = slideName(x), n = where[x.slide], here = st && n === st.n;
+    $('ans').innerHTML = '<h2>' + esc(x.q) + '</h2><div class="link">' +
+      (n != null ? '<button class="go" id="jump"' + (here ? ' disabled' : '') + '>' + (here ? 'This slide is showing' : 'Show its slide') + '</button><span class="at">' + esc(name) + '</span>' : '<span class="at">Open the deck to link this answer to its slide.</span>') + '</div>' +
+      '<p class="s">' + esc(x.say) + '</p>' +
+      (x.numbers && x.numbers.length ? '<h4>Numbers to hold</h4><ul class="n">' + x.numbers.map(function (v) { return '<li>' + esc(v) + '</li>'; }).join('') + '</ul>' : '') +
+      (x.followups && x.followups.length ? '<h4>If they push</h4><dl>' + x.followups.map(function (f) { return '<div><dt>' + esc(f.q) + '</dt><dd>' + esc(f.a) + '</dd></div>'; }).join('') + '</dl>' : '') +
+      (x.background ? '<h4>From zero</h4><p class="z">' + esc(x.background) + '</p>' : '');
+    var j = $('jump'); if (j) j.onclick = jump;
+  }
+  function jump() { var x = QA[shown[sel]]; if (x && where[x.slide] != null) send({ type: 'go', n: where[x.slide] }); }
+  function pick(k) {
+    if (k < 0 || k >= shown.length) return;
+    sel = k;
+    [].forEach.call($('res').children, function (li, i) { li.setAttribute('aria-selected', i === sel); if (i === sel && li.scrollIntoView) li.scrollIntoView({ block: 'nearest' }); });
+    $('ans').scrollTop = 0; answer();
+  }
+  // optional slides are the backup slides. The talk never reaches them on its own, so they are switched to from here.
+  function optional() {
+    if (!st || !st.slides) return;
+    var html = '<button data-n="' + (st.talk - 1) + '"' + (st.n === st.talk - 1 ? ' aria-current="true"' : '') + '>Back to ' + esc(st.slides[st.talk - 1].title) + '</button>';
+    st.slides.forEach(function (s, n) { if (s.backup) html += '<button data-n="' + n + '"' + (st.n === n ? ' aria-current="true"' : '') + '>' + esc(s.title) + '</button>'; });
+    $('opt').innerHTML = html;
+  }
+  function setTab(t) {
+    tab = t;
+    $('script').hidden = t !== 'script'; $('qa').hidden = t !== 'qa';
+    $('t-script').setAttribute('aria-selected', t === 'script'); $('t-qa').setAttribute('aria-selected', t === 'qa');
+    if (t === 'qa') { list(); $('q').focus(); $('q').select(); }
+  }
+
+  if (chan) {
+    chan.onmessage = function (e) {
+      var m = e.data || {};
+      if (m.type === 'state') show(m);
+      else if (m.type === 'resolved') { where = m.where || {}; if (tab === 'qa') list(); }
+    };
+    send({ type: 'hello' });
+  } else $('wait').firstChild.nodeValue = 'This browser cannot link two windows. Use Chrome, Edge, Firefox or Safari 15.4 or later.';
   setInterval(tick, 250);
   setInterval(function () { if (!st) send({ type: 'hello' }); }, 1500);
 
@@ -105,6 +339,19 @@
   $('fwd').onclick = function () { step(1); };
   $('open').onclick = function () { window.open('./?mode=slides', 'ucluster-deck'); };
   $('hide').onclick = function () { $('hint').hidden = true; try { localStorage.setItem('presenter-hint', '0'); } catch (e) {} };
+  $('t-script').onclick = function () { setTab('script'); };
+  $('t-qa').onclick = function () { setTab('qa'); };
+  $('q').addEventListener('input', function () { sel = 0; list(); });
+  $('here').onclick = function () { hereOnly = !hereOnly; $('here').setAttribute('aria-pressed', hereOnly); sel = 0; list(); };
+  $('edit').onclick = function () { if (editing) { endEdit(); show(st); } else startEdit(); };
+  $('say').addEventListener('input', function () { if (editing) due($('say').textContent); });
+  $('pub').onclick = function () { if (st) window.open('./?edit&t=' + Date.now() + '#' + (st.n + 1), 'ucluster-editor'); };
+  $('undo').onclick = function () { if (!st || !NOTES[st.n]) return; var d = draft(); if (d) { delete d.units[NOTES[st.n].si]; keep(d); } show(st); };
+  loadSource();
+  // answers live in qa.js, which is edited on GitHub
+  if (window.DECK_QA_EDIT) { $('editqa').href = window.DECK_QA_EDIT; $('editqa').hidden = false; }
+  $('res').addEventListener('click', function (e) { var li = e.target.closest('li'); if (li) pick(+li.getAttribute('data-k')); });
+  $('opt').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) send({ type: 'go', n: +b.getAttribute('data-n') }); });
   var fs = 30;
   try { fs = +localStorage.getItem('presenter-fs') || 30; if (localStorage.getItem('presenter-hint') === '0') $('hint').hidden = true; } catch (e) {}
   function size(d) { fs = Math.max(18, Math.min(56, fs + d)); document.documentElement.style.setProperty('--fs', fs + 'px'); try { localStorage.setItem('presenter-fs', fs); } catch (e) {} }
@@ -113,11 +360,24 @@
   $('larger').onclick = function () { size(2); };
   addEventListener('keydown', function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (editing) { if (e.key === 'Escape') { endEdit(); show(st); } return; }      // while a script is being edited, keys type
+    if (tab === 'qa') {
+      // typing belongs to the search box, so only these keys act
+      if (e.key === 'ArrowDown') { e.preventDefault(); pick(sel + 1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); pick(sel - 1); }
+      else if (e.key === 'Enter') { e.preventDefault(); jump(); }
+      else if (e.key === 'Escape') { if ($('q').value) { $('q').value = ''; sel = 0; list(); } else setTab('script'); }
+      else if (e.key === 'PageDown') { e.preventDefault(); step(1); }
+      else if (e.key === 'PageUp') { e.preventDefault(); step(-1); }
+      else if (document.activeElement !== $('q') && e.key.length === 1) $('q').focus();
+      return;
+    }
     if (['ArrowRight', 'PageDown', ' ', 'Enter'].indexOf(e.key) >= 0) { e.preventDefault(); step(1); }
     else if (['ArrowLeft', 'PageUp', 'Backspace'].indexOf(e.key) >= 0) { e.preventDefault(); step(-1); }
     else if (e.key === 'Home') send({ type: 'go', n: 0 });
     else if (e.key === 'End' && st) send({ type: 'go', n: st.talk - 1 });
     else if (e.key === 's' || e.key === 'S') toggle();
+    else if (e.key === 'q' || e.key === 'Q' || e.key === '/') { e.preventDefault(); setTab('qa'); }
   });
 })();
 </script>
