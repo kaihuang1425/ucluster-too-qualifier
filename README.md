@@ -29,9 +29,11 @@ This is the easiest route. Open https://ucluster-too-qualifier.vercel.app/?edit 
 2. Speaker notes for the slide on screen sit in the panel at the bottom, with the script's length beside them. On a phone they appear under each slide.
 3. **Chart numbers** opens the values behind the roofline and the scaling chart. The charts redraw as you type.
 4. Edits are saved in your browser as you go, so a reload or a closed tab loses nothing. **Discard** throws them away.
-5. Press **Publish** (or Ctrl and S). You see every change marked up by slide. Sign in with GitHub the first time.
-6. Publishing opens a pull request. The page shows the automatic check as it runs, then a link to Vercel's preview.
-7. Once the check passes, press **Make it live**. The live site updates about a minute later.
+5. Press **Publish** (or Ctrl and S). You see every change marked up by slide.
+6. Send the changes to GitHub in one of two ways.
+   - **Publish from the page.** Sign in with GitHub the first time. The page opens a pull request, shows the automatic check as it runs, then links to Vercel's preview. Once the check passes, press **Make it live**. This needs the one-time setup at the end of this guide.
+   - **Download and upload.** Press **Download the edited files**. The next screen opens GitHub's upload page for this repository and lists the four steps. Drag the file in, choose to start a pull request, and merge it once the check is green. Pushing the file from your own copy of the repository works too.
+7. The live site updates about a minute after the merge.
 
 The editor looks after the details that are easy to get wrong by hand.
 
@@ -42,7 +44,7 @@ The editor looks after the details that are easy to get wrong by hand.
 
 The page editor cannot add, remove or reorder slides. Do that on GitHub as described below.
 
-You need to be a collaborator on this repository to publish. Anyone else can still make edits and press **Download the edited files**, then upload them on GitHub.
+Publishing from the page, uploading and pushing all need collaborator access to this repository. Someone without it can still upload. GitHub then turns the upload into a pull request from their own copy, which a collaborator merges.
 
 ## Edit on GitHub
 
@@ -150,7 +152,11 @@ It also warns, without failing, when the talk's script runs over five minutes or
 
 ## Deployment
 
-The Vercel project `ucluster-too-qualifier` is connected to this repository. Pushes to `main` go to the live site, and every other branch gets its own preview address. Teammates need no Vercel account, because the repository belongs to a personal GitHub account. Preview addresses are public like the live address, so anyone with the link can open one. Do not put anything on a branch that should not be seen outside the team. If a deploy fails, the commit or pull request shows a red Vercel status with a link to the log.
+The Vercel project `ucluster-too-qualifier` is connected to this repository. Pushes to `main` go to the live site, and every other branch gets its own preview address. Teammates need no Vercel account.
+
+**Keep this repository public.** On Vercel's free plan, a private repository only deploys commits written by the Vercel account owner, and Vercel blocks everyone else's with the status "Deployment was blocked". A public repository deploys commits from anyone with write access. The slides were public on the live site already, so making the repository public exposed only the code, this guide and the commit history.
+
+Preview addresses are public like the live address, so anyone with the link can open one. Do not put anything on a branch that should not be seen outside the team. If a deploy fails, the commit or pull request shows a red Vercel status with a link to the log.
 
 ## Switch on publishing from the page
 

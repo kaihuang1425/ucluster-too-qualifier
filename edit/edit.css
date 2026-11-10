@@ -128,6 +128,11 @@
 .ed-steps li.bad > i { background: var(--bad-soft); color: var(--bad); }
 .ed-steps li.bad > i::before { content: '!'; }
 .ed-steps b { font-weight: 500; }
+.ed-steps.num { counter-reset: ed-step; }
+.ed-steps.num li > i { background: var(--accent-soft); color: var(--on-soft); }
+.ed-steps.num li > i::before { counter-increment: ed-step; content: counter(ed-step); }
+a.ed-btn { text-decoration: none; }
+.ed-modal code { font: 500 13px var(--mono); background: var(--surface-2); color: var(--ink); padding: 1px 6px; border-radius: 6px; white-space: nowrap; }
 .ed-steps span { display: block; color: var(--soft); font-size: 14px; }
 @keyframes ed-spin { to { transform: rotate(360deg); } }
 

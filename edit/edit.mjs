@@ -13,7 +13,8 @@ import * as M from '../lib/htmlmap.mjs';
 const D = window.DECK, root = document.documentElement, stage = document.getElementById('stage');
 const KEY = 'deck-edit:v1', RESUME = 'deck-edit:resume';
 const S = { src: '', js: '', list: [], units: [], bySi: new Map(), notes: new Map(), attr: new Map(),
-  block: null, nums: [], vals: [], paths: [], dataOK: false, me: { state: 'loading' }, pr: null, title: '', home: null, poll: 0, stale: false };
+  block: null, nums: [], vals: [], paths: [], dataOK: false, me: { state: 'loading' }, pr: null, title: '', home: null, poll: 0, stale: false,
+  repo: 'kaihuang1425/ucluster-too-qualifier' };
 const baseText = new WeakMap();
 const ALLOW = new Set(['b', 'i', 'em', 'strong', 'sub', 'sup', 's', 'small', 'code', 'u']);
 const VOIDS = new Set(['br', 'img', 'hr', 'wbr']);
@@ -220,20 +221,23 @@ function save() {
 function restore() {
   let d = null; try { d = JSON.parse(store.get(KEY) || 'null'); } catch (e) {}
   if (!d || d.v !== 1) return;
-  let dropped = 0, kept = 0;
+  let dropped = 0, kept = 0, live = 0;
   for (const si in d.units) {
     const u = S.bySi.get(+si), x = d.units[si];
+    if (u && srcInner(u) === x.new) { live++; continue; }              // already in the deck, for example after an upload
     if (!u || srcInner(u) !== x.old) { dropped++; continue; }
     u.el.innerHTML = x.new; u.el.querySelectorAll('*').forEach(e => e.setAttribute('data-keep', ''));
     walkText(u.el, n => baseText.set(n, n.data));
     sync(u); kept++;
   }
   if (d.data && S.dataOK) {
-    if (d.data.old === S.block.text) { d.data.vals.forEach((v, k) => { if (v !== S.nums[k].text) setValue(k, v); }); kept++; } else dropped++;
+    if (d.data.vals.every((v, k) => v === S.nums[k].text)) live++;
+    else if (d.data.old === S.block.text) { d.data.vals.forEach((v, k) => { if (v !== S.nums[k].text) setValue(k, v); }); kept++; } else dropped++;
   }
   S.pr = d.pr || null; S.title = d.title || '';
   if (dropped) setTimeout(() => toast(plural(dropped, 'saved edit') + ' no longer matched the deck, because someone changed the same text. ' + (kept ? 'Your other edits are back.' : '')), 600);
-  else if (kept) setTimeout(() => toast('Your unpublished edits are back.'), 600);
+  else if (kept) setTimeout(() => toast('Your unpublished edits are back.' + (live ? ' ' + plural(live, 'other edit') + ' are already live.' : '')), 600);
+  else if (live) setTimeout(() => toast('Your edits are live in the deck now.'), 600);
 }
 
 /* ------------------------------------------------------- collecting edits */
@@ -437,6 +441,7 @@ async function api(path, body) {
 async function loadMe() {
   const r = await api('me');
   const d = r.data;
+  if (typeof d.repo === 'string' && /^[\w.-]+\/[\w.-]+$/.test(d.repo)) S.repo = d.repo;
   if (!r.ok && r.status !== 401 || d.configured === undefined) S.me = { state: 'off', why: 'here' };
   else if (!d.configured) S.me = { state: 'off', why: 'setup', site: d.site };
   else if (!d.signedIn) S.me = { state: 'signin', site: d.site, here: d.signInHere };
@@ -518,19 +523,23 @@ function openReview() {
   let note = '', primary = '';
   if (m.state === 'ready') primary = '<button class="ed-btn primary" data-a="send"' + (bad.length ? ' disabled' : '') + '>' + (upd ? 'Update pull request #' + S.pr.number : 'Publish for review') + '</button>';
   else if (m.state === 'signin') primary = '<button class="ed-btn primary" data-a="signin"' + (bad.length ? ' disabled' : '') + '>Sign in with GitHub to publish</button>';
-  else if (m.state === 'noaccess') note = '<p class="ed-note warn">Your GitHub account @' + esc(m.login) + ' cannot write to the repository yet. Ask the owner to add you as a collaborator, then sign out and sign in again.</p>';
+  else if (m.state === 'noaccess') note = '<p class="ed-note">Your GitHub account @' + esc(m.login) + ' cannot publish to the repository yet. Download the edited files and upload them on GitHub instead, or ask the owner to add you as a collaborator.</p>';
   else if (m.state === 'loading') note = '<p class="ed-note">Checking your GitHub sign-in. Try again in a moment.</p>';
-  else if (m.why === 'setup') note = '<p class="ed-note warn">Publishing from the page is not switched on yet. The repository owner finishes a one-time setup described in the README. Until then you can download the edited files and upload them on GitHub.</p>';
-  else note = '<p class="ed-note warn">Publishing works on the live site at ucluster-too-qualifier.vercel.app. Here you can download the edited files and upload them on GitHub.</p>';
-  open(`<header><h3>Review your changes</h3><p>${plural(n, 'change')} on ${slideList(changedSlides(ops))}. ${upd ? 'This replaces what pull request #' + S.pr.number + ' holds now.' : 'Publishing opens a pull request. The live site stays as it is until the check passes and you make it live.'}</p></header>
+  else if (m.why === 'setup') note = '<p class="ed-note">Publishing straight from the page is not switched on yet. Download the edited files and upload them on GitHub. It takes about a minute, and the next screen shows how.</p>';
+  else note = '<p class="ed-note">Publishing straight from the page works on the live site. Here, download the edited files and upload them on GitHub. The next screen shows how.</p>';
+  const canSend = m.state === 'ready' || m.state === 'signin';
+  if (!canSend && m.state !== 'loading') primary = '<button class="ed-btn primary" data-a="download"' + (bad.length ? ' disabled' : '') + '>Download the edited files</button>';
+  const lead = !canSend && m.state !== 'loading' ? 'Download them below, then upload them on GitHub.'
+    : upd ? 'This replaces what pull request #' + S.pr.number + ' holds now.' : 'Publishing opens a pull request. The live site stays as it is until the check passes and you make it live.';
+  open(`<header><h3>Review your changes</h3><p>${plural(n, 'change')} on ${slideList(changedSlides(ops))}. ${lead}</p></header>
     <div class="ed-body">
       ${bad.length ? '<div class="ed-note bad"><b>Fix these before publishing.</b><ul>' + bad.map(x => '<li>' + esc(x.text) + '</li>').join('') + '</ul></div>' : ''}
       ${warn.length ? '<div class="ed-note warn"><b>Style notes.</b> These do not block publishing.<ul>' + warn.map(x => '<li>' + esc(x.text) + '</li>').join('') + '</ul></div>' : ''}
       ${note}
       ${changesHtml(ops)}
-      <div class="ed-field"><label for="ed-title">Pull request title</label><input id="ed-title" class="ed-input" maxlength="120" value="${esc(S.title || defaultTitle(ops))}"></div>
+      ${canSend ? '<div class="ed-field"><label for="ed-title">Pull request title</label><input id="ed-title" class="ed-input" maxlength="120" value="' + esc(S.title || defaultTitle(ops)) + '"></div>' : ''}
     </div>
-    <footer><button class="ed-link" data-a="download">Download the edited files</button><span class="ed-grow"></span><button class="ed-btn ghost" data-a="close">Keep editing</button>${primary}</footer>`);
+    <footer>${canSend ? '<button class="ed-link" data-a="download">Download the files instead</button>' : ''}<span class="ed-grow"></span><button class="ed-btn ghost" data-a="close">Keep editing</button>${primary}</footer>`);
 }
 
 async function publish() {
@@ -687,5 +696,15 @@ function download() {
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' })); a.download = name;
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   }, i * 400));
-  toast('Downloaded ' + files.map(f => f[0]).join(' and ') + '. On GitHub, choose Add file, then Upload files, and commit them to a new branch.');
+  const names = files.map(f => f[0]), both = names.length > 1;
+  const code = n => '<code>' + n + '</code>';
+  open(`<header><h3>Now upload ${both ? 'them' : 'it'} on GitHub</h3><p>Your browser saved ${names.map(code).join(' and ')}. Uploading ${both ? 'them' : 'it'} replaces the ${both ? 'files' : 'file'} of the same name in the repository.</p></header>
+    <div class="ed-body"><ol class="ed-steps num">
+      ${step('', 'Open the upload page', 'The button below opens it in a new tab. Sign in to GitHub if it asks.')}
+      ${step('', 'Drag ' + (both ? 'both files' : 'the file') + ' from your Downloads folder onto the page', 'If your browser saved ' + code('index (1).html') + ' or a similar name, rename it to ' + code('index.html') + ' first. Otherwise GitHub adds a new file instead of replacing the slide file.')}
+      ${step('', 'Choose “Create a new branch for this commit and start a pull request”', 'Then press Propose changes and Create pull request. The automatic check runs and Vercel posts a preview link.')}
+      ${step('', 'Merge the pull request once the check is green', 'The live site updates about a minute later. Then press Discard here, so the editor starts again from the new version.')}
+    </ol>
+    <p class="ed-note">Working from your own copy of the repository? Put the ${both ? 'files' : 'file'} in its folder, then commit and push as usual. Vercel deploys every push.</p></div>
+    <footer><span class="ed-grow"></span><button class="ed-btn ghost" data-a="close">Keep editing</button><a class="ed-btn primary" data-a="close" target="_blank" rel="noopener" href="https://github.com/${esc(S.repo)}/upload/main">Open the upload page</a></footer>`);
 }
