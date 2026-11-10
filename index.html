@@ -156,7 +156,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
       </div>
     </div>
     <div class="srcl">Points use likwid-perfctr FLOPS_SP and MEM at full node (32 and 64 threads) and average over the whole process, not a single kernel. The best Grid kernel runs reached 361 and 864 GFLOP/s, about 11% and 9% of the FP32 ceiling. Data from docs/slides-D.md, docs/submission-review.md and ceilings.csv.</div>
-    <aside class="notes">Hardware counters put Grid at about two operations per byte, roughly a tenth of the ridge point on either node. That puts both runs on the bandwidth side of the roofline. Including setup, Grid reached 71 percent of that ceiling on DINE and 61 percent on DINE2.<span class="bg">Grid is a lattice QCD code. At its intensity the bandwidth roof allows about 363 GFLOP/s on DINE and 826 on DINE2. Grid’s own memory benchmark reaches 98% and 89% of LIKWID’s triad, so the streaming itself is efficient. The counters cover the whole process, including setup, and not a single kernel.</span></aside>
+    <aside class="notes">We then ran Grid, a physics code. The processor’s own counters put it at about two calculations per byte, a tenth of those thresholds. So memory, not compute, limits Grid on both nodes. It reached 71 percent of that limit on DINE and 61 on DINE2.<span class="bg">Grid is a lattice QCD code. At its intensity the bandwidth roof allows about 363 GFLOP/s on DINE and 826 on DINE2. Grid’s own memory benchmark reaches 98% and 89% of LIKWID’s triad, so the streaming itself is efficient. The counters cover the whole process, including setup, and not a single kernel.</span></aside>
   </section>
 
   <!-- 8. Thread placement -->
