@@ -167,8 +167,8 @@ def main():
             check(True, "checks clear once the headline is fixed")
 
             go(pg, 6)
-            replace(pg, "slide(6).querySelector('[data-count]')", "15,400")
-            check(pg.evaluate("() => { " + JS_SLIDE + " return slide(6).querySelector('[data-count]').getAttribute('data-to'); }") == "15400", "the count-up value follows a new big number")
+            replace(pg, "slide(6).querySelector('[data-count]')", "7.52")
+            check(pg.evaluate("() => { " + JS_SLIDE + " return slide(6).querySelector('[data-count]').getAttribute('data-to'); }") == "7.52", "the count-up value follows a new big number")
             append(pg, "document.querySelector('.ed-host .notes')", " We repeated this run twice.")
             check("repeated this run" in pg.inner_text(".ed-host .notes"), "speaker notes for the current slide are editable in the dock")
 
@@ -213,7 +213,7 @@ def main():
             check(len(js_diff) == 2 and "P: 3350" in js_diff[1], "deck.js changes on exactly 1 line, the chart value")
             h = main_files["index.html"]
             check('<i style="--v:50"></i></span><b>+50%</b>' in h, "the bar and its label are saved together")
-            check('data-to="15400">15,400<' in h, "the big number and its count-up value are saved together")
+            check('data-to="7.52" data-dec="2">7.52<' in h, "the big number and its count-up value are saved together")
             check("<h2 class=\"t-h2\">" + new_h2 + "</h2>" in h or new_h2 in h, "the new headline is saved")
             check("We repeated this run twice.</aside>" in h, "the speaker notes are saved")
             check("data-si" not in h and "contenteditable" not in h and "data-ed" not in h, "no editor markers leak into the file")

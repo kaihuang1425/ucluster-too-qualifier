@@ -81,12 +81,12 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <div class="concl rise">
       <div><span class="rt-n">01</span><p><b>Get access.</b> Log in, check the hardware and modules, and run a small test job.</p></div>
       <div><span class="rt-n">02</span><p><b>Understand the problem.</b> Read up on HPL, rooflines or decision trees, and run a baseline.</p></div>
-      <div><span class="rt-n">03</span><p><b>Change one thing at a time.</b> Sweep a single setting with everything else fixed to find its best value.</p></div>
-      <div><span class="rt-n">04</span><p><b>Collect plenty of data.</b> Submit many jobs, follow them with squeue and keep every raw result.</p></div>
+      <div><span class="rt-n">03</span><p><b>Vary one parameter per experiment.</b> Sweep a single parameter with all others held constant to identify its optimal value.</p></div>
+      <div><span class="rt-n">04</span><p><b>Run systematic job campaigns.</b> Submit each sweep as a batch of jobs, monitor them with squeue and retain every raw result.</p></div>
       <div><span class="rt-n">05</span><p><b>Plot and interpret.</b> Draw every figure from the raw data with a script, then write up what it shows.</p></div>
     </div>
     <p class="t-lead wide rise">Rounds 1 and 2 were benchmark sweeps. Round 3 was a modelling problem, so step 3 meant comparing models and settings on the same data split.</p>
-    <aside class="notes">Before the results, here is how we approached every round. First we got onto the nodes and checked what we had. Then we read up on the problem and ran a baseline. For the benchmarks we changed one setting at a time with everything else fixed, submitted many jobs, tracked them with squeue and kept all the raw output. Every plot came from a script, and we wrote up our interpretation last. Round 3 was a modelling task rather than a benchmark, so the sweep became a fair comparison of models on the same data split.</aside>
+    <aside class="notes">Before the results, here is how we approached every round. First we got onto the nodes and checked what we had. Then we read up on the problem and ran a baseline. For the benchmarks we varied one parameter per experiment with all others held constant, submitted each sweep as a batch of jobs, monitored them with squeue and retained all the raw output. Every plot came from a script, and we wrote up our interpretation last. Round 3 was a modelling task rather than a benchmark, so the sweep became a fair comparison of models on the same data split.</aside>
   </section>
 
   <!-- ===================== ROUND 1 · EPCC CIRRUS ===================== -->
