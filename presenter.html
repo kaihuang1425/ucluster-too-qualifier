@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0E0E0F">
+<title>Presenter view · UCLuster Too</title>
+<!-- PRESENTER VIEW. Press P on the deck to open this in its own window. It shows the script, the timing and what
+     comes next, and it drives the deck window. In a call, share only the deck window, so this one stays private.
+     It holds no slide content of its own. The deck window sends it the current slide over a BroadcastChannel,
+     so both windows have to be open in the same browser. -->
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,300..700&family=Google+Sans+Code:wght@400;500&display=swap">
+<link rel="stylesheet" href="house.css">
+<style>
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); display: flex; flex-direction: column; overflow: hidden; }
+  .top { display: flex; align-items: center; gap: 18px; padding: 14px 22px; border-bottom: 1px solid var(--hair); flex: none; }
+  .pos { font: 500 15px var(--mono); color: var(--accent); white-space: nowrap; }
+  .ttl { flex: 1; min-width: 0; font-size: 16px; color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .clock { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; }
+  .clock b { font: 500 34px var(--mono); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .clock span { font: 400 13px var(--mono); color: var(--dim); }
+  .clock.late b { color: var(--bad); }
+  button { font: inherit; color: var(--ink); background: var(--surface-2); border: 0; border-radius: 10px; padding: 8px 14px; font-size: 14px; cursor: pointer; }
+  button:hover { background: var(--surface-3); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.ghost { background: transparent; color: var(--soft); }
+  main { flex: 1; min-height: 0; overflow: auto; padding: 28px 22px 20px; }
+  .say { max-width: calc(var(--fs, 30px) * 34); margin: 0 auto; font-size: var(--fs, 30px); line-height: 1.5; letter-spacing: -.005em; }
+  .bg { max-width: calc(var(--fs, 30px) * 34); margin: 26px auto 0; padding-top: 18px; border-top: 1px solid var(--hair); font-size: calc(var(--fs, 30px) * .58); line-height: 1.55; color: var(--soft); }
+  .bg:empty { display: none; }
+  .wait { max-width: 30em; margin: 12vh auto 0; text-align: center; color: var(--muted); font-size: 20px; line-height: 1.5; }
+  .wait button { margin-top: 18px; background: var(--accent); color: var(--accent-ink); font-weight: 500; }
+  .bot { display: flex; align-items: center; gap: 14px; padding: 12px 22px; border-top: 1px solid var(--hair); flex: none; }
+  .next { flex: 1; min-width: 0; font-size: 15px; color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .next i { font-style: normal; color: var(--dim); margin-right: 8px; }
+  .hint { padding: 8px 22px; font-size: 13px; color: var(--dim); background: var(--surface); flex: none; display: flex; gap: 12px; align-items: center; }
+  .hint span { flex: 1; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="top">
+  <span class="pos" id="pos"></span>
+  <span class="ttl" id="ttl"></span>
+  <span class="clock" id="clock"><b id="time">0:00</b><span id="due"></span></span>
+  <button id="run">Start</button>
+  <button id="reset" class="ghost">Reset</button>
+</div>
+<div class="hint" id="hint"><span>In Teams choose Share, then Window, and pick the deck window. This window is not shared, so only you see the script. Keep the deck window uncovered.</span><button class="ghost" id="hide">Hide</button></div>
+<main>
+  <div class="wait" id="wait">Waiting for the deck. Open it in another window of this browser, then press P there or come back here.<br><button id="open">Open the deck</button></div>
+  <div class="say" id="say" hidden></div>
+  <div class="bg" id="bg" hidden></div>
+</main>
+<div class="bot">
+  <button id="prev" aria-label="Previous slide">‹ Back</button>
+  <span class="next" id="next"></span>
+  <button id="smaller" class="ghost" aria-label="Smaller text">A−</button>
+  <button id="larger" class="ghost" aria-label="Larger text">A+</button>
+  <button id="fwd" aria-label="Next slide">Next ›</button>
+</div>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var chan = 'BroadcastChannel' in window ? new BroadcastChannel('ucluster-deck') : null;
+  var st = null, started = 0, banked = 0, running = false;
+  function clock(v) { v = Math.max(0, Math.round(v)); return Math.floor(v / 60) + ':' + ('0' + v % 60).slice(-2); }
+  function elapsed() { return banked + (running ? (Date.now() - started) / 1000 : 0); }
+  function tick() {
+    var e = elapsed();
+    $('time').textContent = clock(e);
+    // late means the stopwatch has passed the time this slide should end, with five seconds of grace
+    $('clock').classList.toggle('late', !!st && st.k >= 0 && e > st.ends + 5);
+  }
+  function show(m) {
+    st = m;
+    $('wait').hidden = true; $('say').hidden = false; $('bg').hidden = false;
+    $('pos').textContent = m.k < 0 ? m.label : 'Slide ' + (m.k + 1) + ' of ' + m.talk;
+    $('ttl').textContent = m.title;
+    $('say').innerHTML = m.script || '<span style="color:var(--dim)">No script for this slide.</span>';
+    $('bg').innerHTML = m.bg || '';
+    $('due').textContent = m.k < 0 ? 'backup, not timed' : 'about ' + Math.round(m.secs) + ' s · ends at ' + clock(m.ends) + ' of ' + clock(m.total);
+    $('next').innerHTML = m.next ? '<i>Next</i>' + m.next.replace(/</g, '&lt;') : '<i>Last slide</i>';
+    document.querySelector('main').scrollTop = 0;
+    tick();
+  }
+  function send(m) { if (chan) chan.postMessage(m); }
+  function step(d) { send({ type: 'step', d: d }); if (d > 0 && !running && !banked && st && st.n === 0) toggle(); }   // leaving the title starts the stopwatch
+  function toggle() {
+    if (running) { banked = elapsed(); running = false; } else { started = Date.now(); running = true; }
+    $('run').textContent = running ? 'Pause' : (banked ? 'Resume' : 'Start');
+    tick();
+  }
+  if (chan) { chan.onmessage = function (e) { if (e.data && e.data.type === 'state') show(e.data); }; send({ type: 'hello' }); }
+  else $('wait').firstChild.nodeValue = 'This browser cannot link two windows. Use Chrome, Edge, Firefox or Safari 15.4 or later.';
+  setInterval(tick, 250);
+  setInterval(function () { if (!st) send({ type: 'hello' }); }, 1500);
+
+  $('run').onclick = toggle;
+  $('reset').onclick = function () { running = false; banked = 0; $('run').textContent = 'Start'; tick(); };
+  $('prev').onclick = function () { step(-1); };
+  $('fwd').onclick = function () { step(1); };
+  $('open').onclick = function () { window.open('./?mode=slides', 'ucluster-deck'); };
+  $('hide').onclick = function () { $('hint').hidden = true; try { localStorage.setItem('presenter-hint', '0'); } catch (e) {} };
+  var fs = 30;
+  try { fs = +localStorage.getItem('presenter-fs') || 30; if (localStorage.getItem('presenter-hint') === '0') $('hint').hidden = true; } catch (e) {}
+  function size(d) { fs = Math.max(18, Math.min(56, fs + d)); document.documentElement.style.setProperty('--fs', fs + 'px'); try { localStorage.setItem('presenter-fs', fs); } catch (e) {} }
+  size(0);
+  $('smaller').onclick = function () { size(-2); };
+  $('larger').onclick = function () { size(2); };
+  addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (['ArrowRight', 'PageDown', ' ', 'Enter'].indexOf(e.key) >= 0) { e.preventDefault(); step(1); }
+    else if (['ArrowLeft', 'PageUp', 'Backspace'].indexOf(e.key) >= 0) { e.preventDefault(); step(-1); }
+    else if (e.key === 'Home') send({ type: 'go', n: 0 });
+    else if (e.key === 'End' && st) send({ type: 'go', n: st.talk - 1 });
+    else if (e.key === 's' || e.key === 'S') toggle();
+  });
+})();
+</script>
+</body>
+</html>
