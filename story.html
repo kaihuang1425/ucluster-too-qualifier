@@ -255,24 +255,24 @@ html.read .trap{grid-template-columns:1fr}
       <ol class="rl-row">
         <li class="ag">
           <div class="rt-h"><span class="rt-n">01</span><b>Week 1</b><small>Edinburgh</small></div>
-          <div class="rt-task">We learned the hardware from our results, and swept layouts without a plan.</div>
-          <div class="rt-row"><span class="caps2">Lesson</span><p style="color:var(--ink)">Run a recon job first, and have every job record its own results.</p></div>
+          <div class="rt-task">We wrote a new script for each experiment, and built results tables by hand.</div>
+          <div class="rt-row"><span class="caps2">Lesson</span><p style="color:var(--ink)">One script with job arrays, and every job writes its own results row.</p></div>
         </li>
         <li class="ag">
           <div class="rt-h"><span class="rt-n">02</span><b>Week 2</b><small>Durham</small></div>
-          <div class="rt-task">205 jobs, each logging its build and host. A compiler gap turned out to be thread placement.</div>
-          <div class="rt-row"><span class="caps2">Lesson</span><p style="color:var(--ink)">Before blaming one factor, check what else differed between runs.</p></div>
+          <div class="rt-task">Clang looked faster than GCC. It was really thread placement, worth up to 58%.</div>
+          <div class="rt-row"><span class="caps2">Lesson</span><p style="color:var(--ink)">Before blaming one factor, check what else differed between the runs.</p></div>
         </li>
         <li class="ag">
           <div class="rt-h"><span class="rt-n">03</span><b>Week 3</b><small>UCL</small></div>
-          <div class="rt-task">We locked down the patient data first, then tested every factor against shuffled copies.</div>
-          <div class="rt-row"><span class="caps2">Lesson</span><p style="color:var(--ink)">Test every effect against noise before you believe it.</p></div>
+          <div class="rt-task">Our first model was 76% accurate, but flagged none of the 60 resistant patients.</div>
+          <div class="rt-row"><span class="caps2">Lesson</span><p style="color:var(--ink)">Check what your score ignores. Balanced accuracy caught 39 of 60.</p></div>
         </li>
       </ol>
     </div>
     <p class="t-lead wide rise" style="color:var(--ink)">That's the habit we'd take to the finals: check before you believe.</p>
     <div class="foot rise" style="font-size:22px"><span>UCLuster Too · Ada Ge, Bobby Ta, Eric Huang, James Loke</span><span>Thank you · Backup slides follow</span></div>
-    <aside class="notes">• Each week we changed how we worked, based on what went wrong the week before.<br>• Week 1, Edinburgh. We learned the machine from our own results and swept layouts without a hypothesis. So from week 2 we ran a recon job first, chose layouts from the topology, used one parameterised script with job arrays, and had every job write its own results row.<br>• Week 2, Durham. That paid off: 205 jobs by Friday morning, each recording its git hash, modules, build flags and host, and 95 of 97 overnight runs succeeded. The Clang-versus-GCC gap turned out to be thread placement, which gave us a rule for week 3: before blaming one factor, check what else differed between the runs.<br>• Week 3, UCL. The data file arrived readable by every user, so we locked it down before any analysis. Then we applied the week 2 rule: we checked what our score ignored, and tested every factor against shuffled copies and random noise. Only age survived.<br>• That's the habit we'd take to the finals: check before you believe. Thank you.</aside>
+    <aside class="notes">• Each week we changed how we worked, based on what went wrong the week before.<br>• Week 1, Edinburgh. We wrote a new script for every experiment and assembled results tables by hand afterwards. From week 2 we used one parameterised submit script with job arrays, and every job wrote its own results row, so nothing was copied by hand.<br>• Week 2, Durham. Clang looked faster than GCC on DINE2. The real cause was thread placement: the two OpenMP runtimes put threads on different sockets, and fixing placement was worth up to 58%. That gave us a rule: before blaming one factor, check what else differed between the runs.<br>• Week 3, UCL. Only one patient in four is resistant, so a model that says everyone is fine is still 76% accurate. Our first model did exactly that and flagged none of the 60 resistant patients. Accuracy and ROC AUC both hid it. Balanced accuracy weights both groups equally, and the fixed model caught 39 of 60.<br>• That's the habit we'd take to the finals: check before you believe. Thank you.</aside>
   </section>
 
   <!-- Backup divider -->
