@@ -35,17 +35,17 @@ html.read .trap{grid-template-columns:1fr}
 </head>
 <body>
 <!--
-  5-MINUTE VERSION of index.html. Slides 1 to 11 are the talk (about 620 spoken words).
-  Slide 12 is a divider, and 13 to 25 are detail slides, most of them unchanged from index.html, as backup for questions.
+  5-MINUTE VERSION of index.html. Slides 1 to 12 are the talk (about 700 spoken words).
+  Slide 13 is a divider, and 14 to 26 are detail slides, most of them unchanged from index.html, as backup for questions.
   The page editor (?edit) and tools/check.py only cover index.html, so edit this file by hand.
 
    1 Title                  5 HPL, 1 vs 4 nodes         9 Thread placement
    2 Three separate tasks   6 HPCG on half the cores   10 UCL: metric and risk factors
    3 Approach               7 Node ceilings vs spec    11 A check changed each first answer
-   4 HPL tuning             8 Grid is memory-limited
+   4 HPL tuning             8 Grid is memory-limited   12 What we learnt, week by week
 -->
 <div class="stage" id="stage">
-  <!-- ===================== 5-MINUTE STORY (slides 1–11) ===================== -->
+  <!-- ===================== 5-MINUTE STORY (slides 1–12) ===================== -->
 
   <!-- S1. Title -->
   <section class="dk">
@@ -247,8 +247,35 @@ html.read .trap{grid-template-columns:1fr}
       <div><span><b>UCL</b></span><span>Deprivation raises the risk</span><span>Against random numbers</span><span>Noise. Only age is real.</span></div>
     </div>
     <p class="t-lead wide rise" style="color:var(--ink)">Each time, the first answer came from how we measured, not from the machine or the patients. A simple check caught it.</p>
-    <div class="foot rise" style="font-size:22px"><span>UCLuster Too · Ada Ge, Bobby Ta, Eric Huang, James Loke</span><span>Backup slides follow</span></div>
-    <aside class="notes">The three tasks were unrelated, but the same thing happened in each. Our first answer came from how we measured, not from the machine or the patients. And each time, a simple check caught it. That's what we'd take to the finals. Thank you.</aside>
+    <aside class="notes">The three tasks were unrelated, but the same thing happened in each. Our first answer came from how we measured, not from the machine or the patients. And each time, a simple check caught it.</aside>
+  </section>
+
+  <!-- S12. What we learnt, week by week -->
+  <section class="dk" style="gap:44px">
+    <h2 class="t-h2">Each week's lesson changed how we worked the next week</h2>
+    <div class="relay route rise" data-n="3">
+      <div class="rl-track" aria-hidden="true"><span class="rl-line"></span><div class="rl-nodes"><i class="rl-node"></i><i class="rl-node"></i><i class="rl-node"></i></div><span class="rl-pulse"></span></div>
+      <ol class="rl-row">
+        <li class="ag">
+          <div class="rt-h"><span class="rt-n">01</span><b>Week 1</b><small>Edinburgh</small></div>
+          <div class="rt-task">We learned the hardware from our results, and swept layouts without a plan.</div>
+          <div class="rt-row"><span class="caps2">Lesson</span><p style="color:var(--ink)">Run a recon job first, and have every job record its own results.</p></div>
+        </li>
+        <li class="ag">
+          <div class="rt-h"><span class="rt-n">02</span><b>Week 2</b><small>Durham</small></div>
+          <div class="rt-task">205 jobs, each logging its build and host. A compiler gap turned out to be thread placement.</div>
+          <div class="rt-row"><span class="caps2">Lesson</span><p style="color:var(--ink)">Before blaming one factor, check what else differed between runs.</p></div>
+        </li>
+        <li class="ag">
+          <div class="rt-h"><span class="rt-n">03</span><b>Week 3</b><small>UCL</small></div>
+          <div class="rt-task">We locked down the patient data first, then tested every factor against shuffled copies.</div>
+          <div class="rt-row"><span class="caps2">Lesson</span><p style="color:var(--ink)">Test every effect against noise before you believe it.</p></div>
+        </li>
+      </ol>
+    </div>
+    <p class="t-lead wide rise" style="color:var(--ink)">That's the habit we'd take to the finals: check before you believe.</p>
+    <div class="foot rise" style="font-size:22px"><span>UCLuster Too · Ada Ge, Bobby Ta, Eric Huang, James Loke</span><span>Thank you · Backup slides follow</span></div>
+    <aside class="notes">• Each week we changed how we worked, based on what went wrong the week before.<br>• Week 1, Edinburgh. We learned the machine from our own results and swept layouts without a hypothesis. So from week 2 we ran a recon job first, chose layouts from the topology, used one parameterised script with job arrays, and had every job write its own results row.<br>• Week 2, Durham. That paid off: 205 jobs by Friday morning, each recording its git hash, modules, build flags and host, and 95 of 97 overnight runs succeeded. The Clang-versus-GCC gap turned out to be thread placement, which gave us a rule for week 3: before blaming one factor, check what else differed between the runs.<br>• Week 3, UCL. The data file arrived readable by every user, so we locked it down before any analysis. Then we applied the week 2 rule: we checked what our score ignored, and tested every factor against shuffled copies and random noise. Only age survived.<br>• That's the habit we'd take to the finals: check before you believe. Thank you.</aside>
   </section>
 
   <!-- Backup divider -->
