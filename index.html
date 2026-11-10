@@ -169,7 +169,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
       </div>
     </div>
     <div class="srcl">Placement drawn for threads 0 to 7 only. Numbers in cells are OS core IDs. Best case after the fix was 361 GFLOP/s on DINE (GCC, 32 threads, L = 48) and 864 GFLOP/s on DINE2 (GCC, 128 SMT threads, socket-ordered, L = 24). Data from report/report.tex, docs/slides-A.md and analysis/data/tuning_summary.csv.</div>
-    <aside class="notes">Clang initially looked faster than GCC. Then we checked the core IDs. Default binding put neighbouring threads on opposite sockets. Ordering threads by socket lifted throughput by up to 58 percent at lattice size 24. GCC caught up when we matched placement. We would fix the layout before comparing compilers again.<span class="bg">Clang looked faster only because LLVM’s OpenMP runtime happened to place threads differently. An apparently fast node, gc007, had the same explanation. The 58% is at L = 24.</span></aside>
+    <aside class="notes">Clang compiler initially looked faster than GCC. However, we figured out this was an artefact of core numbering. We fixed this and achieved equal performance on both compilers.<span class="bg">Clang looked faster only because LLVM’s OpenMP runtime happened to place threads differently. An apparently fast node, gc007, had the same explanation. The 58% is at L = 24.</span></aside>
   </section>
 
   <!-- ===================== ROUND 3 · UCL CONDENSER ===================== -->
