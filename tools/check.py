@@ -17,6 +17,7 @@ Errors (the check fails):
   * the page editor (?edit) failing to start, usually because a tag in index.html is not closed
     (tools/test_editor.py tests the editor itself in more depth)
   * the presenter view (presenter.html) not following the deck window
+  * a narrow window on a computer switching to the phone layout instead of scaling the slides
 
 Warnings (shown, but the check still passes):
   * house writing rules in visible text and speaker notes
@@ -227,6 +228,15 @@ def main():
                 error("presenter view: it shows no script for slide 2")
         except Exception as e:
             error("presenter view: it did not follow the deck (" + str(e).splitlines()[0] + ")")
+        ctx.close()
+
+        # A narrow window on a computer keeps the slides, scaled to fit, so the deck can sit beside the presenter view
+        ctx = b.new_context(viewport={"width": 520, "height": 420}, screen={"width": 1920, "height": 1080})
+        page = ctx.new_page(); watch(page, "narrow desktop window")
+        page.goto(base + "?static#3"); page.wait_for_function("window.DECK"); page.wait_for_timeout(400)
+        r = page.evaluate("(() => { const s = document.getElementById('stage').getBoundingClientRect(); return { mode: document.documentElement.className, w: s.width, h: s.height, left: s.left, top: s.top, sw: document.documentElement.scrollWidth }; })()")
+        if "slides" not in r["mode"] or r["w"] > 521 or r["h"] > 421 or r["left"] < -1 or r["top"] < -1 or r["w"] < 500:
+            error(f"narrow desktop window: expected slides scaled to fit a 520 px window, got \"{r['mode'].strip()}\" with a stage of {r['w']:.0f} x {r['h']:.0f} px")
         ctx.close()
         b.close()
 

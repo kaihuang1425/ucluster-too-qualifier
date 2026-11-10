@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0E0E0F">
-<script>/* pick the layout before first paint: phones read top to bottom, larger screens get slides. ?mode=read or ?mode=slides overrides. */
-document.documentElement.className += (function () { var m = /[?&]mode=(read|slides)/.exec(location.search); return (m ? m[1] === 'read' : Math.min(innerWidth, innerHeight) < 600) ? ' read' : ' slides'; })();</script>
+<script>/* pick the layout before first paint: phones read top to bottom, larger screens get slides. ?mode=read or ?mode=slides overrides.
+   The test is the size of the device's screen, not of the window, so a narrow window on a computer still shows slides. */
+document.documentElement.className += (function () { var m = /[?&]mode=(read|slides)/.exec(location.search); var s = window.screen && screen.width ? Math.min(screen.width, screen.height) : Math.min(innerWidth, innerHeight); return (m ? m[1] === 'read' : s < 600) ? ' read' : ' slides'; })();</script>
 <title>UCLuster Too Qualifier</title>
 <!-- UCLuster Too · CIUK Cluster Challenge 2026 qualifier pitch. Built on the house deck (hackathon design system).
      Keys: → / Space / click right half = next, ← / click left half = back, Home / End, F = full screen, N = speaker notes,
@@ -496,7 +497,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
     <aside class="notes">From round 2 we worked to four fixed roles, with a written guide for each role. In Durham we held two short syncs a day, and at UCL an evening check-in. Every work session left a log entry recording what failed and how we fixed it. The round 3 roles shown here are the ones we described in our UCL video.</aside>
   </section>
 
-  <div class="chap" id="chap" aria-hidden="true"><span data-r="1"><b>1</b>Cirrus</span><span data-r="2"><b>2</b>DiRAC</span><span data-r="3"><b>3</b>Condenser</span></div>
+  <div class="chap" id="chap" aria-hidden="true"><span data-r="1"><b>1</b>EPCC</span><span data-r="2"><b>2</b>Durham</span><span data-r="3"><b>3</b>UCL</span></div>
   <div class="bar" id="bar"></div>
   <div class="count" id="count"></div>
 </div>

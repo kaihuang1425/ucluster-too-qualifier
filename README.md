@@ -137,13 +137,14 @@ It runs on every pull request and every push to `main` through GitHub Actions. I
 - A counter, bar or chart dot no longer matches the label next to it.
 - The page editor cannot start, which usually means a tag in `index.html` is not closed.
 - The presenter view does not follow the deck window.
+- A narrow window on a computer switches to the phone layout.
 - The page editor's own test fails. It edits slides, publishes through a stand-in GitHub and compares the files line by line.
 
 It also warns, without failing, when the talk's script runs over five minutes or a talk slide has no script.
 
 ## Viewing modes
 
-- **Desktop and iPad** show slides. Use the arrow keys, click either half, or swipe. F toggles full screen, N shows the script with its timing, and P opens the presenter view in its own window.
+- **Desktop and iPad** show slides at any window size, scaled to fit, so the deck can sit in a narrow window beside the presenter view. Use the arrow keys, click either half, or swipe. F toggles full screen, N shows the script with its timing, and P opens the presenter view in its own window.
 - **Phones** show one scrolling page with each slide stacked below the last.
 - Add `?mode=slides` or `?mode=read` to the address to force one layout. Add `?static` to turn off animation, and `?edit` to edit.
 - Printing to PDF from a desktop browser gives one slide per page.
