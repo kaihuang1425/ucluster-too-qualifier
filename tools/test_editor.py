@@ -86,6 +86,23 @@ READY = "() => { const s = document.querySelector('.ed-sum'); return (s && !/Loa
 JS_SLIDE = "const slide = n => document.querySelectorAll('#stage .dk')[n - 1];"
 
 
+def slide_with(marker):
+    """The number of the first slide whose HTML holds marker. Slides get reordered, so the tests never hard-code a number."""
+    with open(os.path.join(ROOT, "index.html"), encoding="utf-8") as fh:
+        parts = fh.read().split('<section class="dk"')[1:]
+    for i, part in enumerate(parts):
+        if marker in part.split("</section>")[0]:
+            return i + 1
+    raise SystemExit("No slide holds " + marker)
+
+
+LEV = slide_with('class="levers')            # HPL tuning bars
+DUO = slide_with('class="duo compact')       # two big numbers side by side
+HALF = slide_with('class="nodes2')           # core maps
+RES = slide_with('class="tiles')             # round 1 results
+ROOF = slide_with('id="roofline"')
+
+
 def ready(page):
     page.wait_for_function(READY, timeout=15000)
     page.wait_for_function("document.fonts.status === 'loaded'")
@@ -144,36 +161,36 @@ def main():
             pg = ctx.new_page(); watch(pg, errors)
 
             print("Editing on the page (Chromium)")
-            pg.goto(base + "/?edit#5"); ready(pg)
+            pg.goto(base + "/?edit#%d" % LEV); ready(pg)
             check(pg.query_selector(".ed-fail") is None, "the editor starts without errors")
             check(pg.evaluate("document.querySelectorAll('[data-ed]').length") > 300, "slide text is editable")
             check("Click any text" in summary(pg), "the dock invites a first edit")
 
-            replace(pg, "slide(5).querySelector('.lv b')", "+50%")
-            check(pg.evaluate("() => { " + JS_SLIDE + " return getComputedStyle(slide(5).querySelector('.lv .lv-t i')).getPropertyValue('--v').trim(); }") == "50", "the bar grows to match a new label of +50%")
+            replace(pg, "slide(%d).querySelector('.lv b')" % LEV, "+50%")
+            check(pg.evaluate("() => { " + JS_SLIDE + " return getComputedStyle(slide(%d).querySelector('.lv .lv-t i')).getPropertyValue('--v').trim(); }" % LEV) == "50", "the bar grows to match a new label of +50%")
 
-            replace(pg, "slide(5).querySelector('h2')", " ".join(["This headline is now far too long for the slide"] * 6))
+            replace(pg, "slide(%d).querySelector('h2')" % LEV, " ".join(["This headline is now far too long for the slide"] * 6))
             pg.wait_for_selector(".ed-chk.bad", timeout=5000)
             check("outside its frame" in pg.evaluate("JSON.stringify(__deckEditor.issues().bad)"), "a slide that no longer fits is flagged while typing")
             pg.click('[data-a="publish"]')
             check(pg.is_disabled('.ed-modal [data-a="signin"]'), "publishing is blocked while a slide does not fit")
             pg.click('.ed-modal [data-a="close"]')
-            replace(pg, "slide(5).querySelector('h2')", "Problem size gave most of the gain; flags gave none")
+            replace(pg, "slide(%d).querySelector('h2')" % LEV, "Problem size gave most of the gain; flags gave none")
             pg.wait_for_selector(".ed-chk.warn", timeout=5000)
             check(pg.query_selector(".ed-chk.bad") is None and "semicolon" in pg.evaluate("JSON.stringify(__deckEditor.issues().warn)"), "a semicolon gives a style note, not a problem")
             new_h2 = "On one node, problem size gave most of the HPL gain and compiler flags gave none"
-            replace(pg, "slide(5).querySelector('h2')", new_h2)
+            replace(pg, "slide(%d).querySelector('h2')" % LEV, new_h2)
             pg.wait_for_function("!document.querySelector('.ed-chk.on')", timeout=5000)
             check(True, "checks clear once the headline is fixed")
 
-            go(pg, 6)
-            replace(pg, "slide(6).querySelector('[data-count]')", "7.52")
-            check(pg.evaluate("() => { " + JS_SLIDE + " return slide(6).querySelector('[data-count]').getAttribute('data-to'); }") == "7.52", "the count-up value follows a new big number")
+            go(pg, DUO)
+            replace(pg, "slide(%d).querySelector('[data-count]')" % DUO, "7.52")
+            check(pg.evaluate("() => { " + JS_SLIDE + " return slide(%d).querySelector('[data-count]').getAttribute('data-to'); }" % DUO) == "7.52", "the count-up value follows a new big number")
             append(pg, "document.querySelector('.ed-host .notes')", " We repeated this run twice.")
             check("repeated this run" in pg.inner_text(".ed-host .notes"), "speaker notes for the current slide are editable in the dock")
 
             pg.click('[data-a="chart"]')
-            pg.fill('input[aria-label="Roofline · slide 12 · DINE · Peak GFLOP/s"]', "3350")
+            pg.fill('input[aria-label="Roofline · slide %d · DINE · Peak GFLOP/s"]' % ROOF, "3350")
             pg.wait_for_timeout(300)
             check(pg.evaluate("DECK_DATA.roofline[0].P") == 3350, "a chart number changes and the chart redraws")
             pg.click('.ed-modal [data-a="close"]')
@@ -196,7 +213,7 @@ def main():
             pg.wait_for_selector('.ed-modal:not([hidden]) [data-a="send"]', timeout=10000)
             check(pg.url.startswith(base + "/?edit"), "the teammate is signed in and back on the deck after GitHub")
             review = pg.text_content(".ed-modal")
-            check("Slide 5" in review and "Slide 6" in review and "Peak GFLOP/s" in review, "the review lists every change by slide")
+            check("Slide %d" % LEV in review and "Slide %d" % DUO in review and "Peak GFLOP/s" in review, "the review lists every change by slide")
             pg.click('.ed-modal [data-a="send"]')
             pg.wait_for_selector(".ed-modal h3:has-text('Pull request #1')", timeout=20000)
             pg.wait_for_selector(".ed-steps li.ok:has-text('The automatic check passed')", timeout=240000 if RUN_CHECK else 40000)
@@ -215,7 +232,8 @@ def main():
             check('<i style="--v:50"></i></span><b>+50%</b>' in h, "the bar and its label are saved together")
             check('data-to="7.52" data-dec="2">7.52<' in h, "the big number and its count-up value are saved together")
             check("<h2 class=\"t-h2\">" + new_h2 + "</h2>" in h or new_h2 in h, "the new headline is saved")
-            check("We repeated this run twice.</aside>" in h, "the speaker notes are saved")
+            # typing at the very end of a note lands in its background block when the note has one
+            check("We repeated this run twice.</aside>" in h or "We repeated this run twice.</span></aside>" in h, "the speaker notes are saved")
             check("data-si" not in h and "contenteditable" not in h and "data-ed" not in h, "no editor markers leak into the file")
             if RUN_CHECK:
                 log = mock_get(mock, "/__mock/log")["log"] or ""
@@ -224,15 +242,15 @@ def main():
             print("Publishing from a page that is out of date")
             pg.reload(); ready(pg)
             check(summary(pg).startswith("Click any text"), "the draft is cleared once the edits are live")
-            go(pg, 5)
-            replace(pg, "slide(5).querySelector('h2')", "A clashing headline")
+            go(pg, LEV)
+            replace(pg, "slide(%d).querySelector('h2')" % LEV, "A clashing headline")
             pg.click('[data-a="publish"]'); pg.click('.ed-modal [data-a="send"]')
             pg.wait_for_selector(".ed-modal h3:has-text('Someone changed the same text')", timeout=15000)
-            check("Slide 5" in pg.text_content(".ed-modal"), "a clash with a newer edit is caught and named")
+            check("Slide %d" % LEV in pg.text_content(".ed-modal"), "a clash with a newer edit is caught and named")
             pg.click('.ed-modal [data-a="close"]')
             pg.click('[data-a="discard"]'); ready(pg)
-            go(pg, 9)
-            replace(pg, "slide(9).querySelector('h2')", "Round 1 results on Cirrus, by efficiency and by speed")
+            go(pg, RES)
+            replace(pg, "slide(%d).querySelector('h2')" % RES, "Round 1 results on Cirrus, by efficiency and by speed")
             pg.click('[data-a="publish"]'); pg.click('.ed-modal [data-a="send"]')
             pg.wait_for_selector(".ed-modal h3:has-text('Pull request #2')", timeout=15000)
             head = [x for x in mock_get(mock, "/__mock/main")["pulls"] if x["number"] == 2][0]["head"]["ref"]
@@ -244,8 +262,8 @@ def main():
 
             if not RUN_CHECK:
                 print("A failing check, then an update to the same pull request")
-                go(pg, 9)
-                replace(pg, "slide(9).querySelector('h2')", "Round 1 results MOCK-FAIL")
+                go(pg, RES)
+                replace(pg, "slide(%d).querySelector('h2')" % RES, "Round 1 results MOCK-FAIL")
                 pg.click('[data-a="publish"]')
                 check("Update pull request #2" in pg.inner_text(".ed-modal"), "a second publish offers to update the open pull request")
                 pg.click('.ed-modal [data-a="send"]')
@@ -253,7 +271,7 @@ def main():
                 check("content runs from" in pg.inner_text(".ed-modal"), "the check's own message is shown on the page")
                 check(pg.is_disabled('.ed-modal [data-a="live"]'), "make it live stays off while the check fails")
                 pg.click('.ed-modal [data-a="close"]')
-                replace(pg, "slide(9).querySelector('h2')", "Round 1 results on Cirrus, by efficiency and by speed")
+                replace(pg, "slide(%d).querySelector('h2')" % RES, "Round 1 results on Cirrus, by efficiency and by speed")
                 pg.click('[data-a="publish"]'); pg.click('.ed-modal [data-a="send"]')
                 pg.wait_for_selector(".ed-steps li.ok:has-text('The automatic check passed')", timeout=40000)
                 check(len(mock_get(mock, "/__mock/main")["pulls"]) == 2, "the fix updates pull request #2 instead of opening a third")
@@ -270,9 +288,9 @@ def main():
             wk = p.webkit.launch()
             ctx = wk.new_context(viewport={"width": 1180, "height": 820}, has_touch=True)
             pg = ctx.new_page(); watch(pg, errors)
-            pg.goto(base + "/?edit#8"); ready(pg)
+            pg.goto(base + "/?edit#%d" % HALF); ready(pg)
             check(pg.query_selector(".ed-fail") is None and pg.evaluate("document.documentElement.classList.contains('slides')"), "the editor starts in WebKit on an iPad-size screen")
-            hh = replace(pg, "slide(8).querySelector('h2')", "Two  spaces stay single")
+            hh = replace(pg, "slide(%d).querySelector('h2')" % HALF, "Two  spaces stay single")
             pg.keyboard.press("Shift+Enter"); pg.keyboard.type("second line", delay=2); pg.wait_for_timeout(250)
             si = hh.evaluate("e => +e.getAttribute('data-si')")
             out = pg.evaluate("si => __deckEditor.ser(si)", si)

@@ -5,7 +5,7 @@
    Every value comes from the Durham repository (bobby-ta/cluster-challenge-durham).
    If you change a number here, change the matching text on the slide and its source line too. */
 var DECK_DATA = {
-  // Slide 11, roofline.
+  // Roofline.
   // P  = measured FP32 ceiling in GFLOP/s (likwid-bench peakflops_sp)
   // B  = measured memory bandwidth in GB/s (likwid-bench triad_mem)
   // ai = Grid FLOPs per byte, g = Grid GFLOP/s, both from likwid-perfctr at full node
@@ -13,7 +13,7 @@ var DECK_DATA = {
     { n: 'DINE',  P: 3341, B: 230.6, ai: 1.574, g: 259.3, c: 'var(--accent)' },
     { n: 'DINE2', P: 9287, B: 397.9, ai: 2.077, g: 505.9, c: 'var(--ai)' }
   ],
-  // Slide 13, strong scaling at L = 32. Each pair is [threads, speed-up over 1 thread].
+  // Strong scaling at L = 32. Each pair is [threads, speed-up over 1 thread].
   scaling: [
     { n: 'DINE',  c: 'var(--accent)', a: 'middle', p: [[1, 1], [2, 1.734], [4, 2.573], [8, 5.492], [16, 10.228], [24, 13.453], [32, 17.198]] },
     { n: 'DINE2', c: 'var(--ai)',     a: 'end',    p: [[1, 1], [2, 1.905], [4, 3.589], [8, 6.36], [16, 10.248], [24, 10.709], [32, 13.173], [48, 17.141], [64, 21.422]] }
@@ -25,6 +25,27 @@ var DECK_DATA = {
   var root = document.documentElement;
   var stage = document.getElementById('stage'), slides = [].slice.call(stage.querySelectorAll('.dk')), cur = -1;
   var bar = document.getElementById('bar'), counter = document.getElementById('count');
+  // The talk is every slide without data-backup. Backup slides come after it and are for questions.
+  var talk = slides.filter(function (s) { return !s.hasAttribute('data-backup'); });
+  var backup = slides.filter(function (s) { return s.hasAttribute('data-backup'); });
+  if (backup[0]) backup[0].classList.add('bk-first');
+  // A slide's script is its note text outside any .bg (background for questions). Timing assumes 140 words a minute,
+  // and counts a number as 2.5 words because "2.15" or "64%" takes longer to say than one word.
+  var WPM = 140, LIMIT = 300;
+  function scriptOf(a) { if (!a) return ''; var c = a.cloneNode(true); [].forEach.call(c.querySelectorAll('.bg'), function (b) { b.parentNode.removeChild(b); }); return c.textContent.replace(/\s+/g, ' ').trim(); }
+  function secs(a) { var t = scriptOf(a), w = 0; if (!t) return 0; t.split(' ').forEach(function (x) { w += /\d/.test(x) ? 2.5 : 1; }); return w / WPM * 60; }
+  function clock(v) { v = Math.round(v); return Math.floor(v / 60) + ':' + ('0' + v % 60).slice(-2); }
+  // Timing for the whole talk. noteOf lets the page editor pass the notes it has moved into its toolbar.
+  function timing(noteOf) {
+    var rows = talk.map(function (s) { return secs(noteOf ? noteOf(s) : s.querySelector('.notes')); }), total = 0, ends = rows.map(function (v) { total += v; return total; });
+    return { rows: rows, ends: ends, total: total, limit: LIMIT, wpm: WPM };
+  }
+  function timeLine(s, noteOf) {
+    var k = talk.indexOf(s);
+    if (k < 0) return 'Backup slide · for questions, not timed';
+    var t = timing(noteOf);
+    return 'Slide ' + (k + 1) + ' of ' + talk.length + ' · about ' + Math.round(t.rows[k]) + ' s · ends at ' + clock(t.ends[k]) + ' · whole talk ' + clock(t.total) + ' of ' + clock(LIMIT);
+  }
   var NS = 'http://www.w3.org/2000/svg';
   var forced = (/[?&]mode=(read|slides)\b/.exec(location.search) || [])[1];
   // ?edit opens the page editor (edit/edit.mjs). Each element is numbered before anything below changes the page,
@@ -50,7 +71,13 @@ var DECK_DATA = {
     s.querySelectorAll('.rise').forEach(function (r, i) { r.style.setProperty('--ri', i); });
     // speaker notes become an expandable block in the reading layout
     var a = s.querySelector('.notes');
-    if (a && !EDIT) { var d = document.createElement('details'); d.className = 'rnotes'; d.innerHTML = '<summary>Speaker notes</summary><p>' + a.innerHTML + '</p>'; s.appendChild(d); }
+    if (a && !EDIT) {
+      var d = document.createElement('details'), c = a.cloneNode(true), bg = c.querySelector('.bg'), k = talk.indexOf(s);
+      if (bg) c.removeChild(bg);
+      d.className = 'rnotes';
+      d.innerHTML = '<summary>' + (k < 0 ? 'Notes' : 'Script · about ' + Math.round(secs(a)) + ' s') + '</summary>' + (c.innerHTML.trim() ? '<p>' + c.innerHTML + '</p>' : '') + (bg ? '<p class="bg">' + bg.innerHTML + '</p>' : '');
+      s.appendChild(d);
+    }
   });
 
   // core maps: 24 chiplets (columns) of 12 cores; "half" lights one core of each pair
@@ -79,7 +106,10 @@ var DECK_DATA = {
       E('line', { x1: x(ridge), x2: x(ridge), y1: y(n.P), y2: B, class: 'ridge', style: 'stroke:' + n.c }, svg);
       E('text', { x: x(ridge) + 10, y: B - 16 - i * 30, class: 'rl', style: 'fill:' + n.c }, svg, 'ridge ' + ridge.toFixed(1));
       E('path', { d: 'M' + x(0.1) + ' ' + y(n.B * 0.1) + ' L' + x(ridge) + ' ' + y(n.P) + ' L' + x(100) + ' ' + y(n.P), class: 'ln', style: 'stroke:' + n.c + ';--k:' + (i * 0.3) + 's' }, svg);
-      E('text', { x: R - 4, y: y(n.P) + (i ? -16 : 34), class: 'rl', 'text-anchor': 'end', style: 'fill:' + n.c }, svg, narrow ? n.n : n.n + ' · ' + fmt(n.P, 0) + ' GFLOP/s · ' + Math.round(n.B) + ' GB/s');
+    });
+    // roof labels go on after every line, so no line runs through the text
+    nodes.forEach(function (n, i) {
+      E('text', { x: R - 4, y: y(n.P) + (i ? -16 : 34), class: 'rl', 'text-anchor': 'end', style: 'fill:' + n.c }, svg, n.n + ' roof');
     });
     nodes.forEach(function (n, i) {
       var g = E('g', { class: 'pt', style: '--k:' + (i * 0.25) + 's' }, svg);
@@ -87,7 +117,7 @@ var DECK_DATA = {
       E('circle', { cx: x(n.ai), cy: y(n.g), r: 22, style: 'fill:none;stroke-width:2;opacity:.45;stroke:' + n.c }, g);
       // legend in the empty top-left corner, so labels never sit on the roof lines
       E('circle', { cx: L + 36, cy: T + 34 + i * 42, r: 10, style: 'fill:' + n.c }, g);
-      E('text', { x: L + 58, y: T + 42 + i * 42, class: 'pl' }, g, 'Grid on ' + n.n + ' · ' + n.ai.toFixed(2) + ' FLOPs/byte');
+      E('text', { x: L + 58, y: T + 42 + i * 42, class: 'pl' }, g, 'Grid on ' + n.n);
     });
   }
 
@@ -114,7 +144,7 @@ var DECK_DATA = {
       var g = E('g', { class: 'pt', style: '--k:' + (i * 0.25) + 's' }, svg);
       s.p.forEach(function (q) { E('circle', { cx: x(q[0]), cy: y(q[1]), r: 6, style: 'fill:' + s.c }, g); });
       var e = s.p[s.p.length - 1];
-      E('text', { x: x(e[0]), y: y(e[1]) - 28, class: 'pl', 'text-anchor': s.a }, g, s.n + ' · ' + e[1].toFixed(1) + '×');
+      E('text', { x: x(e[0]), y: y(e[1]) - 28, class: 'pl', 'text-anchor': s.a }, g, s.n);
     });
   }
 
@@ -181,14 +211,14 @@ var DECK_DATA = {
   function finalCounts() { stage.querySelectorAll('[data-count]').forEach(function (el) { clearInterval(el._t); el.textContent = fmt(+el.getAttribute('data-to'), +(el.getAttribute('data-dec') || 0)); }); }
   function playRelay(s) {
     s.querySelectorAll('.relay').forEach(function (r) {
-      r.querySelectorAll('.rl-node, .rl-row > li').forEach(function (el, i, all) { el.style.setProperty('--d', (i % (all.length / 2)) * 2 + 's'); });
+      ['.rl-node', '.rl-row > .ag'].forEach(function (q) { r.querySelectorAll(q).forEach(function (el, i) { el.style.setProperty('--d', i * 2 + 's'); }); });
       r.classList.add('play');
     });
   }
   function activate(s) { if (s.classList.contains('on')) return; s.classList.add('on'); s.querySelectorAll('[data-count]').forEach(count); playRelay(s); }
 
   var chap = document.getElementById('chap'), notes = document.getElementById('notes');
-  function showNotes() { var a = slides[cur].querySelector('.notes'); notes.innerHTML = '<b>Notes · slide ' + (cur + 1) + '</b>' + (a ? a.innerHTML : 'No notes for this slide.'); }
+  function showNotes() { var a = slides[cur].querySelector('.notes'); notes.innerHTML = '<b>' + timeLine(slides[cur]) + '</b>' + (a ? a.innerHTML : 'No notes for this slide.'); }
   function go(n) {
     if (READ) return;
     n = Math.max(0, Math.min(slides.length - 1, n)); if (n === cur) return;
@@ -198,10 +228,11 @@ var DECK_DATA = {
     s.querySelectorAll('[data-count]').forEach(count);
     playRelay(s);
     var rd = +(s.getAttribute('data-round') || 0);
-    chap.classList.toggle('show', rd > 0);
+    chap.classList.toggle('show', rd > 0 && !s.querySelector('.rtag'));
     chap.querySelectorAll('span').forEach(function (sp) { var r = +sp.getAttribute('data-r'); sp.classList.toggle('on', r === rd); sp.classList.toggle('done', r < rd); });
-    bar.style.setProperty('--p', (n + 1) / slides.length);
-    counter.textContent = (n + 1) + ' / ' + slides.length;
+    var k = talk.indexOf(s);
+    bar.style.setProperty('--p', k < 0 ? 1 : (k + 1) / talk.length);
+    counter.textContent = k < 0 ? 'Backup ' + (backup.indexOf(s) + 1) + ' / ' + backup.length : (k + 1) + ' / ' + talk.length;
     if (!notes.hidden) showNotes();
     history.replaceState(null, '', '#' + (n + 1));
     if (window.DECK && DECK.onchange) DECK.onchange(n);
@@ -276,7 +307,7 @@ var DECK_DATA = {
   addEventListener('afterprint', function () { if (printedFromRead) setMode(true); });
 
   // what the page editor needs from the deck
-  window.DECK = { slides: slides, go: go, fit: fit, redraw: drawCharts,
+  window.DECK = { slides: slides, talk: talk, timing: timing, timeLine: timeLine, clock: clock, go: go, fit: fit, redraw: drawCharts,
     cur: function () { return cur; }, read: function () { return READ; }, onchange: null, onmode: null };
 
   setMode(READ);

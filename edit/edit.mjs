@@ -18,7 +18,9 @@ const baseText = new WeakMap();
 const ALLOW = new Set(['b', 'i', 'em', 'strong', 'sub', 'sup', 's', 'small', 'code', 'u']);
 const VOIDS = new Set(['br', 'img', 'hr', 'wbr']);
 const LABELS = { P: 'Peak GFLOP/s', B: 'Bandwidth GB/s', ai: 'FLOPs per byte', g: 'Grid GFLOP/s' };
-const GROUPS = { roofline: 'Roofline · slide 12', scaling: 'Strong scaling · slide 14' };
+const GROUPS = { roofline: 'Roofline', scaling: 'Strong scaling' };
+// a chart is named with the slide it is on now, so the name stays right when slides move
+const groupName = g => { const c = document.getElementById(g), n = c ? D.slides.indexOf(c.closest('.dk')) + 1 : 0; return (GROUPS[g] || g) + (n ? ' · slide ' + n : ''); };
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const el = h => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstElementChild; };
@@ -197,8 +199,8 @@ function setupData() {
 }
 function dataLabel(k) {
   const p = S.paths[k], item = window.DECK_DATA[p[0]][p[1]];
-  if (p[2] === 'p') return (GROUPS[p[0]] || p[0]) + ' · ' + item.n + ' · ' + (p[4] === 0 ? 'thread count ' + (p[3] + 1) : 'speed-up at ' + item.p[p[3]][0] + ' threads');
-  return (GROUPS[p[0]] || p[0]) + ' · ' + item.n + ' · ' + (LABELS[p[2]] || p[2]);
+  if (p[2] === 'p') return groupName(p[0]) + ' · ' + item.n + ' · ' + (p[4] === 0 ? 'thread count ' + (p[3] + 1) : 'speed-up at ' + item.p[p[3]][0] + ' threads');
+  return groupName(p[0]) + ' · ' + item.n + ' · ' + (LABELS[p[2]] || p[2]);
 }
 let redrawT = 0;
 function setValue(k, text) {
@@ -309,6 +311,7 @@ function refresh(now) {
     pub.firstChild.nodeValue = S.pr && S.pr.open ? 'Update #' + S.pr.number : 'Publish';
     dock.querySelector('[data-a="discard"]').hidden = !n;
     renderPrChip();
+    showTime();
     save();
   };
   now ? run() : (refreshT = setTimeout(run, 120));
@@ -326,6 +329,16 @@ function hostNotes(n) {
   if (!u) { host.appendChild(el('<span class="ed-empty">This slide has no speaker notes.</span>')); return; }
   S.home = { el: u.el, parent: u.el.parentNode, next: u.el.nextSibling };
   host.appendChild(u.el);
+  showTime();
+}
+// The notes sit in the toolbar while a slide is open, so the deck is told where to find them.
+function showTime() {
+  const lab = dock && dock.querySelector('.ed-notes > span');
+  if (!lab || !D.timing) return;
+  const s = D.slides[D.cur()], k = D.talk.indexOf(s);
+  if (k < 0) { lab.innerHTML = 'Backup notes<small>not timed</small>'; return; }
+  const t = D.timing(x => { const u = S.notes.get(D.slides.indexOf(x)); return u ? u.el : x.querySelector('.notes'); });
+  lab.innerHTML = 'Script · ' + Math.round(t.rows[k]) + ' s<small' + (t.total > t.limit ? ' class="over"' : '') + '>Talk ' + D.clock(t.total) + ' of ' + D.clock(t.limit) + '</small>';
 }
 
 /* ------------------------------------------------------- interface */
@@ -641,10 +654,10 @@ function openChart() {
     const flat = items.some(it => Object.keys(it).some(f => typeof it[f] === 'number'));
     if (flat) {
       const fields = Object.keys(items[0]).filter(f => typeof items[0][f] === 'number');
-      body += '<div class="ed-slide"><h4>' + esc(GROUPS[g] || g) + '</h4><table class="ed-tbl"><tr><th></th>' + fields.map(f => '<th>' + esc(LABELS[f] || f) + '</th>').join('') + '</tr>' +
+      body += '<div class="ed-slide"><h4>' + esc(groupName(g)) + '</h4><table class="ed-tbl"><tr><th></th>' + fields.map(f => '<th>' + esc(LABELS[f] || f) + '</th>').join('') + '</tr>' +
         items.map((it, i) => '<tr><td>' + esc(it.n) + '</td>' + fields.map(f => '<td>' + input(k([g, i, f])) + '</td>').join('') + '</tr>').join('') + '</table></div>';
     } else {
-      body += '<div class="ed-slide"><h4>' + esc(GROUPS[g] || g) + '</h4>' + items.map((it, i) => '<div style="margin:8px 0 12px"><div style="color:var(--muted);margin-bottom:4px">' + esc(it.n) + ' · threads, then speed-up</div><div class="ed-pairs">' +
+      body += '<div class="ed-slide"><h4>' + esc(groupName(g)) + '</h4>' + items.map((it, i) => '<div style="margin:8px 0 12px"><div style="color:var(--muted);margin-bottom:4px">' + esc(it.n) + ' · threads, then speed-up</div><div class="ed-pairs">' +
         (it.p || []).map((q, j) => '<label>' + input(k([g, i, 'p', j, 0])) + input(k([g, i, 'p', j, 1])) + '</label>').join('') + '</div></div>').join('') + '</div>';
     }
   });

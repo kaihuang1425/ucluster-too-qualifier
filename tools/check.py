@@ -20,6 +20,8 @@ Errors (the check fails):
 Warnings (shown, but the check still passes):
   * house writing rules in visible text and speaker notes
     (no colons, semicolons or em dashes in prose, and not the words gap, bridges or shifts)
+  * the talk's script running over five minutes, or a talk slide with no script
+    (the talk is every slide without data-backup, timed at 140 words a minute)
 """
 import functools
 import http.server
@@ -140,6 +142,11 @@ OVERFLOW_JS = r"""() => {
 }"""
 
 
+def clock(v):
+    v = int(round(v))
+    return "%d:%02d" % (v // 60, v % 60)
+
+
 def watch(page, label):
     page.on("pageerror", lambda e: error(f"{label}: JavaScript error: {e}"))
     page.on("console", lambda m: error(f"{label}: console error: {m.text}") if m.type == "error" and "favicon" not in m.text else None)
@@ -173,6 +180,18 @@ def main():
                     warn(f"{where}: {name} in \"...{text[max(0, m.start() - 40):m.start() + 20].strip()}...\"")
             for m in re.finditer(r"\b(gaps?|bridges?|shifts?)\b", text, re.I):
                 warn(f"{where}: the word \"{m.group(0)}\" in \"...{text[max(0, m.start() - 40):m.end() + 20].strip()}...\"")
+
+        # The talk is every slide without data-backup. Its scripts have to fit the slot.
+        t = page.evaluate("Object.assign(DECK.timing(), { titles: DECK.talk.map(s => (s.querySelector('h1, h2') || {}).textContent.trim()) })")
+        print()
+        print("The talk: %d slides, %s of %s at %d words a minute" % (len(t["rows"]), clock(t["total"]), clock(t["limit"]), t["wpm"]))
+        for i, (secs, end, title) in enumerate(zip(t["rows"], t["ends"], t["titles"])):
+            print("  %2d  %3.0f s  ends %s  %s" % (i + 1, secs, clock(end), title[:64]))
+            if secs < 1:
+                warn(f"slide {i + 1} ({title[:40]}) is in the talk but has no script in its speaker notes")
+        if t["total"] > t["limit"]:
+            warn(f"the talk's script runs {clock(t['total'])}, over the {clock(t['limit'])} slot. Shorten a script or move a slide to the backup section.")
+        print()
 
         # The page editor has to be able to follow index.html. Publishing needs the live site, so only start-up is tested here.
         ed = b.new_page(viewport={"width": 1600, "height": 1000})
@@ -212,9 +231,10 @@ def main():
         # iPad in WebKit: slide layout with two-column panels
         ctx = wk.new_context(viewport={"width": 820, "height": 1180}, is_mobile=True, has_touch=True, user_agent=IPAD_UA)
         page = ctx.new_page(); watch(page, "iPad portrait")
-        page.goto(base + "#6"); page.wait_for_timeout(1500)
+        page.goto(base + "#1"); page.wait_for_function("window.DECK")
+        page.evaluate("DECK.go(DECK.slides.findIndex(d => d.querySelector('.duo')))"); page.wait_for_timeout(1500)
         mode = page.evaluate("document.documentElement.className")
-        cols = page.evaluate("getComputedStyle(document.querySelectorAll('.dk')[5].querySelector('.duo')).gridTemplateColumns.split(' ').length")
+        cols = page.evaluate("getComputedStyle(DECK.slides[DECK.cur()].querySelector('.duo')).gridTemplateColumns.split(' ').length")
         if "slides" not in mode or cols != 2:
             error(f"iPad portrait: expected slides with two-column panels, got \"{mode.strip()}\" with {cols} column(s)")
         ctx.close(); wk.close()

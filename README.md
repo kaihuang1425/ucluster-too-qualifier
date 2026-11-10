@@ -1,18 +1,30 @@
 # UCLuster Too · CIUK 2026 qualifier talk
 
-These are the slides for our CIUK Cluster Challenge 2026 qualifier presentation. They cover all three sub-challenges in the order we did them.
+These are the slides for our CIUK Cluster Challenge 2026 qualifier presentation. Slides 1 to 14 are the five-minute talk, covering all three sub-challenges in the order we did them. Slides 15 to 24 are backup for questions.
 
 **Live site** → https://ucluster-too-qualifier.vercel.app
 **Edit it on the page** → https://ucluster-too-qualifier.vercel.app/?edit
 
 Every change to `main` updates the live site within about a minute. Nothing needs installing to edit a slide.
 
+## The five-minute talk
+
+The talk is every slide before the backup section. Each talk slide's speaker notes hold its script, and the scripts add up to 4 minutes 51 seconds.
+
+- **Rehearse.** Press N on any slide to see its script, how long it takes, when it should end and the running total. On a phone, open the block under each slide.
+- **Timing.** The estimate assumes 140 words a minute and counts each number as 2.5 words, because "2.15" or "64%" takes longer to say than one word. If you speak faster or slower, treat the times as relative.
+- **Script and background.** In a note, the plain text is what we say. Text inside `<span class="bg">` is background for questions. It shows smaller under the script and is not timed.
+- **Staying in time.** The page editor shows the script's seconds and the talk's total while you type. The automatic check prints the timing for every slide and warns when the total passes 5:00.
+- **Backup slides.** These are sections with `data-backup`. The counter shows them as "Backup 3 / 10" and they do not count towards the time. To move a slide between the talk and the backup, move its whole `section` block and add or remove `data-backup`.
+
+Each talk slide leads to the next. Round 1 ends with a hypothesis about memory bandwidth, round 2 measures it and finds a confound, and round 3 applies the rule that came from that. When you change a slide, read its script together with the one before and the one after.
+
 ## Edit on the page
 
 This is the easiest route. Open https://ucluster-too-qualifier.vercel.app/?edit on a laptop or iPad. Add a slide number to start there, as in `/?edit#11`.
 
 1. Click any text on a slide and type. Headlines, labels, big numbers, source lines and table cells can all be changed. Press Enter to finish, or Shift and Enter for a new line.
-2. Speaker notes for the slide on screen sit in the panel at the bottom. On a phone they appear under each slide.
+2. Speaker notes for the slide on screen sit in the panel at the bottom, with the script's length beside them. On a phone they appear under each slide.
 3. **Chart numbers** opens the values behind the roofline and the scaling chart. The charts redraw as you type.
 4. Edits are saved in your browser as you go, so a reload or a closed tab loses nothing. **Discard** throws them away.
 5. Press **Publish** (or Ctrl and S). You see every change marked up by slide. Sign in with GitHub the first time.
@@ -96,7 +108,7 @@ Decimals also need `data-dec`, which is the number of decimal places.
 
 **A chart.** Edit `DECK_DATA` at the top of `deck.js`. Then update any slide text that quotes the same number.
 
-**Speaker notes.** Each slide ends with `<aside class="notes">`. Presenters see them with the N key. Phone readers see them as an expandable block under each slide.
+**Speaker notes.** Each slide ends with `<aside class="notes">`. Presenters see them with the N key. Phone readers see them as an expandable block under each slide. On a talk slide the note is the script, so keep it short. Put extra detail in `<span class="bg">` at the end of the note.
 
 **Add or remove a slide.** Copy or delete a whole `section` block together with its numbered comment. Then update the slide list at the top of `index.html`. The slide counter and progress bar update by themselves. Close every tag you open, or the page editor stops with a message naming the line.
 
@@ -108,7 +120,7 @@ The check warns about the punctuation and word rules. Warnings do not block a me
 - Each headline states one finding with its number, as a single sentence.
 - Write without colons, semicolons or em dashes. Split the sentence instead.
 - Avoid the words gap, bridges and shifts.
-- Say what we do not know. Limitations belong on slide 22.
+- Say what we do not know. Limitations belong on the Limitations slide in the backup section.
 
 ## What the check tests
 
@@ -122,9 +134,11 @@ It runs on every pull request and every push to `main` through GitHub Actions. I
 - The page editor cannot start, which usually means a tag in `index.html` is not closed.
 - The page editor's own test fails. It edits slides, publishes through a stand-in GitHub and compares the files line by line.
 
+It also warns, without failing, when the talk's script runs over five minutes or a talk slide has no script.
+
 ## Viewing modes
 
-- **Desktop and iPad** show slides. Use the arrow keys, click either half, or swipe. F toggles full screen and N shows speaker notes.
+- **Desktop and iPad** show slides. Use the arrow keys, click either half, or swipe. F toggles full screen and N shows the script with its timing.
 - **Phones** show one scrolling page with each slide stacked below the last.
 - Add `?mode=slides` or `?mode=read` to the address to force one layout. Add `?static` to turn off animation, and `?edit` to edit.
 - Printing to PDF from a desktop browser gives one slide per page.
