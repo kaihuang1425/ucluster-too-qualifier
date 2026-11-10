@@ -307,7 +307,7 @@ body { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .notes-ov .bg { display: block; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--hair); font-size: 15px; line-height: 1.5; color: var(--soft); }
 
 
-/* ---------- reading layout: phones, and any window under 600 px on its short side ----------
+/* ---------- reading layout: phones, meaning a device screen under 600 px on its short side ----------
    The slides become one scrolling column. Every size below replaces a 1920 x 1080 stage size. */
 .rnotes { display: none; }
 html.read, html.read body { height: auto; overflow: visible; }

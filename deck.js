@@ -54,8 +54,10 @@ var DECK_DATA = {
   if (EDIT) { root.classList.add('editing'); [].forEach.call(stage.querySelectorAll('*'), function (e, i) { e.setAttribute('data-si', i); }); }
   var still = EDIT || /[?&]static\b/.test(location.search);
   if (still) root.classList.add('static');
-  // phones (and any window under 600 px on its short side) get a scrolling reading layout; tablets and desktops get slides
-  function wantRead() { return forced ? forced === 'read' : Math.min(innerWidth, innerHeight) < 600; }
+  // Phones get a scrolling reading layout. Tablets and computers get slides at any window size, so the deck can sit
+  // in a narrow window beside the presenter view. A phone is a device whose screen is under 600 px on its short side.
+  function shortSide() { return window.screen && screen.width ? Math.min(screen.width, screen.height) : Math.min(innerWidth, innerHeight); }
+  function wantRead() { return forced ? forced === 'read' : shortSide() < 600; }
   var READ = root.classList.contains('read');
   function vw() { return window.visualViewport ? visualViewport.width : innerWidth; }
   function vh() { return window.visualViewport ? visualViewport.height : innerHeight; }
