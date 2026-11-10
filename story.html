@@ -71,7 +71,7 @@ html.read .trap{grid-template-columns:1fr}
         <li class="ag">
           <div class="rt-h"><span class="rt-n">02</span><b>Durham</b><small>DiRAC DINE</small></div>
           <div class="rt-task">Measure two nodes' compute and memory limits, and see where the Grid physics code sits.</div>
-          <div class="rt-row"><span class="caps2">What we found</span><p style="color:var(--ink)">Memory bandwidth falls well short of spec, and it is what limits Grid.</p></div>
+          <div class="rt-row"><span class="caps2">What we found</span><p style="color:var(--ink)">DINE2 has 2.78 times DINE’s compute but only 1.72 times its bandwidth. Memory is what limits Grid.</p></div>
         </li>
         <li class="ag">
           <div class="rt-h"><span class="rt-n">03</span><b>UCL</b><small>Condenser cloud</small></div>
@@ -151,22 +151,19 @@ html.read .trap{grid-template-columns:1fr}
     <aside class="notes">HPCG is the opposite kind of benchmark: it mostly reads data from memory. When we ran it on half the cores, it went just as fast and used 7% less power. If removing half the workers doesn't slow you down, the workers aren't the bottleneck. Memory is. So our most efficient HPCG run left half the node idle: 8% better efficiency.</aside>
   </section>
 
-  <!-- S6. Round 2: node ceilings -->
-  <section class="dk" data-round="2" style="gap:30px">
+  <!-- S6. Round 2: DINE against DINE2 -->
+  <section class="dk" data-round="2" style="gap:40px">
     <span class="rtag rise">Round 2 <i></i> Durham</span>
-    <h2 class="t-h2">Both nodes met their compute spec, but memory bandwidth reached only 56% and 71% of spec</h2>
-    <div class="stack rise" style="--gap:18px">
-      <div class="cl-head"><span>Measured with likwid-bench, full node</span><span><em>spec</em></span><span style="text-align:right">vs spec</span></div>
-      <div class="ceil">
-        <div class="cl" style="--k:0"><span class="cl-l">DINE · FP32 compute<small>3,341 of 3,072 GFLOP/s at base clock</small></span><span class="cl-t"><i style="--v:109"></i></span><b>109%</b></div>
-        <div class="cl" style="--k:1"><span class="cl-l">DINE2 · FP32 compute<small>9,287 of 8,602 GFLOP/s at base clock</small></span><span class="cl-t"><i style="--v:108"></i></span><b>108%</b></div>
-        <div class="cl mem" style="--k:2"><span class="cl-l">DINE · memory bandwidth<small>231 of 410 GB/s</small></span><span class="cl-t"><i style="--v:56"></i></span><b>56%</b></div>
-        <div class="cl mem" style="--k:3"><span class="cl-l">DINE2 · memory bandwidth<small>398 of 563 GB/s</small></span><span class="cl-t"><i style="--v:71"></i></span><b>71%</b></div>
-      </div>
+    <h2 class="t-h2">DINE2 has 2.78 times DINE’s compute but only 1.72 times its memory bandwidth</h2>
+    <div class="facts rise">
+      <div><b>2.78×</b><span>FP32 compute. 9,287 against 3,341 GFLOP/s with likwid-bench peakflops_sp</span></div>
+      <div><b>1.72×</b><span>memory bandwidth. 398 against 231 GB/s with likwid-bench triad_mem</span></div>
+      <div><b>23.3 vs 14.5</b><span>FLOPs per byte a code needs before compute becomes its limit</span></div>
+      <div><b>6.2 vs 7.2</b><span>GB/s of memory bandwidth per core, DINE2 against DINE</span></div>
     </div>
-    <p class="t-lead wide rise">DINE2 has twice the cores of DINE but only 1.7 times the bandwidth, so each core gets less memory: 6.2 against 7.2 GB/s.</p>
-    <div class="srcl">Medians of 3 runs of peakflops_sp (AVX or AVX-512 FMA) and triad_mem (non-temporal stores). Compute spec is sockets × cores × base GHz × FLOP per cycle. Memory spec assumes the rated DIMM speed, which we could not verify. Data from analysis/overnight-20261022T224854Z/ceilings.csv and report/report.tex.</div>
-    <aside class="notes">• How we found each limit. We ran each likwid-bench kernel at several thread counts and placements, three times each. The limit is the highest full-node median, not the single fastest run, so one lucky run cannot inflate it.<br>• Compute limit, peakflops_sp. It runs fused multiply-adds on the widest vectors, AVX2 on DINE and AVX-512 on DINE2, using data that stays in registers and L1 cache. Memory is never involved, so the only thing it can hit is how fast the cores calculate.<br>• Memory limit, triad_mem. It computes a = b + c × d over 2 GB, far more than any cache, so every byte comes from main memory. It does only 2 FLOPs per 24 bytes or so, so the cores are never the bottleneck. Its non-temporal stores write straight to memory and skip the extra read a normal store causes.<br>• Why triad and not read-only. Triad reads and writes, like real codes do. A read-only kernel reached 439.5 GB/s on DINE2, so this limit depends on the access pattern.<br>• Against the vendor spec. Compute came out 8 to 9% above the base-clock spec, which we attribute to turbo. Bandwidth reached 56% of the DIMM-rated bound on DINE and 71% on DINE2. That bound is never reached in practice, and we could not verify the DIMM speeds.<br>• Ridge point. Compute limit divided by memory limit. Any code below about 15 FLOPs per byte on DINE, or 23 on DINE2, is limited by memory.</aside>
+    <p class="t-lead wide rise">DINE2 is far faster at maths, but its memory did not keep up. A memory-bound code should gain closer to 1.7 times than 2.8 times on DINE2.</p>
+    <div class="srcl">Full-node medians of 3 runs, one thread per physical core. Compute from peakflops_sp with AVX2 FMA on DINE and AVX-512 FMA on DINE2. Bandwidth from triad_mem with non-temporal stores over 2 GB. Data from analysis/overnight-20261022T224854Z/ceilings.csv and report/report.tex.</div>
+    <aside class="notes">• The brief asked us to measure each node’s compute and memory capability with likwid-bench and compare the two nodes. This slide is that comparison.<br>• How we found each limit. We ran each kernel at several thread counts and placements, three times each, with one thread per physical core. The limit is the highest full-node median, so one lucky run cannot inflate it.<br>• Compute, peakflops_sp. It runs only fused multiply-adds on the widest vectors, using data held in registers and L1 cache. Memory is never involved, so it measures how fast the cores can calculate.<br>• Memory, triad_mem. It computes a = b + c × d over 2 GB, far more than any cache, so every byte comes from main memory. It does about 2 FLOPs per 24 bytes, so the cores are never the bottleneck. We chose triad because it reads and writes like real codes do. Read-only reached 439.5 GB/s on DINE2.<br>• Why compute grew 2.78 times. DINE2 has twice the cores and AVX-512 vectors twice as wide, but a lower clock, 2.1 against 3.0 GHz. That gives about 2 × 2 × 0.7, or 2.8 times.<br>• Why bandwidth grew only 1.72 times. Both nodes have eight memory channels per socket. DINE2’s faster DDR5 adds bandwidth, but nothing like twice the cores’ worth, so each DINE2 core gets less.<br>• Ridge point. Compute divided by bandwidth. A code needs 23.3 FLOPs per byte on DINE2 to be compute-bound, against 14.5 on DINE, so more codes are memory-bound on DINE2.<br>• Other differences we measured. DINE2 slows per core under heavy AVX-512 load, from about 210 GFLOP/s per core on 8 cores to 146 on 32, while DINE holds about 105 at every count. One DINE core streams from L3 at 83.6 GB/s against 31.4 on DINE2. On DINE2, spreading 32 threads over both sockets gave 365.5 GB/s against 195.4 when one socket was filled first.<br>• Link to Grid. Grid ran about 2 times faster on DINE2, closer to the bandwidth ratio than the compute ratio. The next slide shows why.</aside>
   </section>
 
   <!-- S7. Round 2: roofline -->
