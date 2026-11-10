@@ -821,7 +821,12 @@ def main():
             page.screenshot(path=full)
             layout = page.evaluate(EXTRACT_JS, i)
             info = page.evaluate("""i => { const dk = DECK.slides[i]; const n = dk.querySelector('.notes'); const h = dk.querySelector('h1, h2');
-              return { notes: n ? n.textContent.replace(/\\s+/g, ' ').trim() : '', title: h ? h.textContent.replace(/\\s+/g, ' ').trim() : '',
+              const NL = String.fromCharCode(10);
+              // the script comes first, then the background for questions, as separate paragraphs
+              const lines = e => { const c = e.cloneNode(true); c.querySelectorAll('.bg').forEach(x => x.remove()); c.querySelectorAll('br').forEach(x => x.replaceWith(NL));
+                return c.textContent.split(NL).map(l => l.split(' ').filter(Boolean).join(' ')).filter(Boolean).join(NL); };
+              const bgEl = n && n.querySelector('.bg'), note = n ? [lines(n), bgEl ? lines(bgEl) : ''].filter(Boolean).join(NL + NL) : '';
+              return { notes: note, title: h ? h.textContent.replace(/\\s+/g, ' ').trim() : '',
                        text: dk.innerText.replace(/\\s+/g, ' ').trim() }; }""", i)
             slides.append(dict(info, full=full, **layout))
             print("slide %2d  %4d shapes  %3d text blocks  %s" % (i + 1, len(layout["items"]), len(layout["texts"]), info["title"][:56]))

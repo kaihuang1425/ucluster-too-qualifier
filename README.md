@@ -169,9 +169,9 @@ If the secret ever leaks, generate a new one on the app's page, update `GITHUB_C
 
 ## PowerPoint copy
 
-Every change to `main` rebuilds two PowerPoint files and attaches them to the [PowerPoint copy release](https://github.com/kaihuang1425/ucluster-too-qualifier/releases/tag/pptx-latest). Both have all 23 slides at 16:9 with the speaker notes.
+Every change to `main` rebuilds two PowerPoint files and attaches them to the [PowerPoint copy release](https://github.com/kaihuang1425/ucluster-too-qualifier/releases/tag/pptx-latest). Both have every slide at 16:9 with its speaker notes, the script first and the background after it.
 
-- [**UCLuster-Too-qualifier.pptx**](https://github.com/kaihuang1425/ucluster-too-qualifier/releases/download/pptx-latest/UCLuster-Too-qualifier.pptx) rebuilds every slide from PowerPoint's own shapes. Panels, bars, dots and lines are separate shapes, every word is a text box, and nothing is a picture. Each chart and the core map on slide 7 is a group, so it moves as one piece and can be ungrouped to edit a single line, point or label.
+- [**UCLuster-Too-qualifier.pptx**](https://github.com/kaihuang1425/ucluster-too-qualifier/releases/download/pptx-latest/UCLuster-Too-qualifier.pptx) rebuilds every slide from PowerPoint's own shapes. Panels, bars, dots and lines are separate shapes, every word is a text box, and nothing is a picture. Each chart and the core map is a group, so it moves as one piece and can be ungrouped to edit a single line, point or label.
 - [**UCLuster-Too-qualifier-pictures.pptx**](https://github.com/kaihuang1425/ucluster-too-qualifier/releases/download/pptx-latest/UCLuster-Too-qualifier-pictures.pptx) shows every slide as one picture. It looks identical on every computer, but nothing can be edited. Use it to present or to submit.
 
 The shapes file matches the web deck where the fonts Google Sans Flex and Google Sans Code are installed. Both are free from [Google Fonts](https://fonts.google.com/?query=google+sans), and Google Slides has them built in. Without them PowerPoint picks a similar font, so words look slightly different and long lines run a little wider. PowerPoint offers only regular and bold, so words the web shows in a light or medium weight appear in regular. Lines break where they break on the web, so if you reword a sentence, delete the old line break too.
