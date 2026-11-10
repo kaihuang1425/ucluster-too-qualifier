@@ -169,7 +169,7 @@ def main():
             replace(pg, "slide(%d).querySelector('.lv b')" % LEV, "+50%")
             check(pg.evaluate("() => { " + JS_SLIDE + " return getComputedStyle(slide(%d).querySelector('.lv .lv-t i')).getPropertyValue('--v').trim(); }" % LEV) == "50", "the bar grows to match a new label of +50%")
 
-            replace(pg, "slide(%d).querySelector('h2')" % LEV, " ".join(["This headline is now far too long for the slide"] * 6))
+            replace(pg, "slide(%d).querySelector('h2')" % LEV, " ".join(["This headline is now far too long for the slide"] * 20))   # long enough to overflow however little else the slide holds
             pg.wait_for_selector(".ed-chk.bad", timeout=5000)
             check("outside its frame" in pg.evaluate("JSON.stringify(__deckEditor.issues().bad)"), "a slide that no longer fits is flagged while typing")
             pg.click('[data-a="publish"]')

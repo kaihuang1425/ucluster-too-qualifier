@@ -233,6 +233,18 @@ def main():
             for i, s in enumerate(sels):
                 if s not in found:
                     error(f"Q&A: question {i + 1} in qa.js points at \"{s}\", which no slide holds any more. Update its slide selector.")
+            # related forms of a word match through a shared stem, typos still match, and look-alike words do not
+            for w1, w2 in (("difference", "differently"), ("resistant", "resistance"), ("placed", "placement"), ("measured", "measurement"),
+                           ("shuffling", "shuffled"), ("frequencies", "frequency"), ("limitations", "limits"), ("cores", "core"),
+                           ("thred", "thread"), ("bandwith", "bandwidth")):
+                if not pres.evaluate("([a, b]) => __presenter.score(a, b) > 0", [w1, w2]):
+                    error(f"Q&A search: \"{w1}\" should match \"{w2}\"")
+            for w1, w2 in (("compiler", "complete"), ("node", "mode"), ("energy", "enemy"), ("forest", "format"), ("model", "modern"), ("tree", "free")):
+                if pres.evaluate("([a, b]) => __presenter.score(a, b) > 0", [w1, w2]):
+                    error(f"Q&A search: \"{w1}\" should not match \"{w2}\"")
+            hits = pres.evaluate("__presenter.search('difference').map(i => DECK_QA[i].q)")
+            if not any("differently" in q for q in hits):
+                error("Q&A search: \"difference\" should also find the question that says \"differently\"")
             pres.keyboard.press("q")
             pres.keyboard.type("thred placment")
             pres.wait_for_timeout(200)

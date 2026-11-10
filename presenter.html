@@ -11,7 +11,8 @@
                Edit script changes the wording here. The edit is kept in this browser as a draft for the page
                editor (?edit), which is where it gets published like any other edit.
        Q&A     the prepared questions from qa.js with their answers, most likely first. Type to search. The search
-               forgives typos and partial words. Enter shows the slide that goes with the selected answer, and the
+               forgives typos and partial words, and it matches related forms of a word, so difference finds
+               differently. Enter shows the slide that goes with the selected answer, and the
                list of optional slides switches the deck to any backup slide.
      This page holds no slide content of its own. The deck window sends it the current slide over a BroadcastChannel,
      so both windows have to be open in the same browser. -->
@@ -243,15 +244,49 @@
     }
     return prev[b.length];
   }
+  // Related forms of a word share a stem, so "difference" finds "differently" and "resistant" finds "resistance".
+  // The endings are general English ones, tried longest first, and a stem keeps at least four letters.
+  var ENDINGS = ['ently', 'antly', 'ingly', 'ence', 'ance', 'ment', 'edly', 'ness', 'less', 'able', 'ible',
+                 'ion', 'ing', 'ied', 'ent', 'ant', 'ity', 'ive', 'ous', 'ful', 'ize', 'ise', 'ed', 'ly', 'al'];
+  var stems = {}, gramsOf = {};
+  function stem(w) {
+    if (stems[w] !== undefined) return stems[w];
+    var s = w;
+    if (!/[^a-z]/.test(w)) {
+      // a plural first, then one ending, then a final e or y, so placed, places and placement all reach "plac"
+      if (s.length > 5 && /ies$/.test(s)) s = s.slice(0, -3) + 'y';
+      else if (s.length > 4 && /s$/.test(s) && !/(ss|us|is)$/.test(s)) s = s.slice(0, -1);
+      for (var k = 0; k < ENDINGS.length; k++) { var e = ENDINGS[k]; if (s.length - e.length >= 4 && s.slice(-e.length) === e) { s = s.slice(0, -e.length); break; } }
+      if (s.length > 4 && /[ey]$/.test(s)) s = s.slice(0, -1);
+    }
+    return (stems[w] = s);
+  }
+  // How much two words share, as overlapping three-letter pieces. 1 is identical, 0 is nothing in common.
+  function grams(w) { if (gramsOf[w]) return gramsOf[w]; var g = {}, n = 0; for (var i = 0; i + 3 <= w.length; i++) { var x = w.substr(i, 3); g[x] = (g[x] || 0) + 1; n++; } return (gramsOf[w] = { g: g, n: n }); }
+  function overlap(a, b) {
+    var A = grams(a), B = grams(b), shared = 0;
+    if (!A.n || !B.n) return 0;
+    for (var x in A.g) if (B.g[x]) shared += Math.min(A.g[x], B.g[x]);
+    return 2 * shared / (A.n + B.n);
+  }
+  // From best to weakest: the same word, the start of a word, the same stem, a piece of a word, a longer form of the stem,
+  // a typo, a similar shape.
   function wordScore(t, w) {
     if (w === t) return 1;
     if (w.indexOf(t) === 0) return 0.9;
+    if (t.length >= 4 && w.length >= 4) {
+      var a = stem(t), b = stem(w);
+      if (a === b) return 0.85;
+      var short = a.length < b.length ? a : b, long = a.length < b.length ? b : a;       // limit and limitation, compile and compiler
+      if (short.length >= 5 && long.length - short.length <= 3 && long.indexOf(short) === 0) return 0.65;
+    }
     if (t.length >= 4 && w.indexOf(t) > 0) return 0.7;
-    if (t.length >= 4) {
-      var max = t.length >= 7 ? 2 : 1, head = w.slice(0, Math.max(t.length, Math.min(w.length, t.length + 1)));
+    if (t.length >= 5) {
+      var max = t.length >= 8 ? 2 : 1, head = w.slice(0, Math.max(t.length, Math.min(w.length, t.length + 1)));
       var d = Math.min(distance(t, w, max), distance(t, head, max));      // a typo in the whole word, or in the start of a longer one
       if (d <= max) return d === 1 ? 0.6 : 0.45;
     }
+    if (t.length >= 6 && w.length >= 6) { var o = overlap(t, w); if (o >= 0.6) return 0.55 * o; }
     return 0;
   }
   var index = QA.map(function (x) {
@@ -321,6 +356,8 @@
     $('t-script').setAttribute('aria-selected', t === 'script'); $('t-qa').setAttribute('aria-selected', t === 'qa');
     if (t === 'qa') { list(); $('q').focus(); $('q').select(); }
   }
+
+  window.__presenter = { score: wordScore, stem: stem, search: search };      // for tools/check.py
 
   if (chan) {
     chan.onmessage = function (e) {
