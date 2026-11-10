@@ -101,7 +101,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
 
   <!-- 5. HPCG on half the cores -->
   <section class="dk" data-round="1" style="gap:36px">
-    <h2 class="t-h2">HPCG held its throughput at 7% lower power</h2>
+    <h2 class="t-h2">HPCG throughput stayed the same at 7% lower power</h2>
     <div class="nodes2 rise">
       <div>
         <span class="label">288 ranks × 1 core</span>
@@ -114,9 +114,9 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
         <div class="kv"><div>GFLOPS<b>134.5</b></div><div>Power<b>977 W</b></div><div>GFLOPS/W<b style="color:var(--ok)">0.1376</b></div></div>
       </div>
     </div>
-    <p class="t-lead wide rise">Both runs used one thread per rank. With 144 ranks, half the cores sat idle. A bandwidth limit or a change in MPI overhead could explain why throughput held.</p>
+    <p class="t-lead wide rise">Both runs used one thread per rank. With 144 ranks, half the cores sat idle. A bandwidth limit or a change in MPI overhead could explain why throughput stayed the same.</p>
     <div class="srcl">30-minute VALID finals on the same binary and total problem size, split differently into ranks. Job 570229 (288 × 1) against job 571314 (144 × 2) gives +8.1% GFLOPS per watt. Pure MPI ran 1.95 times faster than 24 × 12 because the reference smoother is not threaded. Data from hpcg/results/SUMMARY.md, sections B, F and G.</div>
-    <aside class="notes">We kept the binary and global problem fixed and halved the MPI ranks. Each rank still had one thread, so half the cores sat idle. Throughput held at seven percent lower power, making fewer ranks the more efficient choice. Bandwidth and MPI overhead were both plausible explanations.<span class="bg">Each of the 144 ranks had two cores but one thread, so half the cores sat idle. GFLOPS per watt rose 8% over a full 30-minute valid run. Pure MPI ran 1.95 times faster than 24 ranks × 12 threads because the reference smoother is not threaded. Our EPCC report notes that we did not isolate the bottleneck on Cirrus.</span></aside>
+    <aside class="notes">We kept the binary and global problem fixed and halved the MPI ranks. Each rank still had one thread, so half the cores sat idle. Throughput stayed the same at seven percent lower power, making fewer ranks the more efficient choice. Bandwidth and MPI overhead were both plausible explanations.<span class="bg">Each of the 144 ranks had two cores but one thread, so half the cores sat idle. GFLOPS per watt rose 8% over a full 30-minute valid run. Pure MPI ran 1.95 times faster than 24 ranks × 12 threads because the reference smoother is not threaded. Our EPCC report notes that we did not isolate the bottleneck on Cirrus.</span></aside>
   </section>
 
   <!-- ===================== ROUND 2 · DiRAC DURHAM ===================== -->
@@ -187,9 +187,9 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
       <div><span class="label" style="font-size:28px">First draft · ranked by ROC AUC</span><span class="bignum bad"><span data-count data-from="60" data-to="0">0</span> <span style="font-size:.4em;color:var(--soft)">of 60</span></span><span>resistant test patients flagged, at 76% accuracy</span></div>
       <div><span class="label" style="font-size:28px;color:var(--accent)">Class-balanced tree · ranked by balanced accuracy</span><span class="bignum"><span data-count data-from="0" data-to="39">39</span> <span style="font-size:.4em;color:var(--soft)">of 60</span></span><span>resistant test patients flagged. The random forest flagged 44.</span></div>
     </div>
-    <p class="t-lead wide rise">About a quarter of patients were resistant. At the 0.5 threshold, the first tree flagged no co-amoxiclav resistance. We used class weights and selected by cross-validated balanced accuracy.</p>
+    <p class="t-lead wide rise">ROC AUC scores how well a model ranks patients by risk, not where it draws the yes-or-no line. Only a quarter of patients were resistant, so the first tree never crossed the 0.5 threshold. We used class weights and selected by cross-validated balanced accuracy.</p>
     <div class="srcl"><span class="synthetic">Synthetic data</span>&nbsp; Held-out test set of 250 patients, 60 of them resistant. Balanced accuracy from 5-fold cross-validation on the training set. Data from outputs/model_comparison.csv and video/teamwork-log.md (25 Oct).</div>
-    <aside class="notes">At UCL we had to choose a tree to flag co-amoxiclav resistance in synthetic records. Our first pick by ROC AUC scored 76 percent accuracy by predicting no resistance. We gave resistant cases more weight in training and selected by balanced accuracy, which gives both classes equal weight. The chosen tree flagged 39 of 60 resistant cases.<span class="bg">ROC AUC ignores the decision threshold, so it could not catch a tree that never predicts a probability above one half. Balanced accuracy weights both classes equally. The data covers only ages 20 to 79, and White patients are 17.6% of records against about 82% of the population.</span></aside>
+    <aside class="notes">At UCL we had to choose a tree to flag co-amoxiclav resistance in synthetic records. We first ranked trees by ROC AUC, which scores how well a model orders patients by risk, not where it draws the yes-or-no line. The winner was 76 percent accurate and flagged nobody. Selecting by balanced accuracy, which weights both classes equally, the chosen tree flagged 39 of 60 resistant cases.<span class="bg">ROC AUC ignores the decision threshold, so it could not catch a tree that never predicts a probability above one half. Balanced accuracy weights both classes equally. The data covers only ages 20 to 79, and White patients are 17.6% of records against about 82% of the population.</span></aside>
   </section>
 
   <!-- 10. Risk factors vs noise -->
