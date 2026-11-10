@@ -36,7 +36,7 @@ html.read .trap{grid-template-columns:1fr}
 <body>
 <!--
   5-MINUTE VERSION of index.html. Slides 1 to 10 are the talk (about 560 spoken words).
-  Slide 11 is a divider, and 12 to 24 are detail slides, most of them unchanged from index.html, as backup for questions.
+  Slide 11 is a divider, and 12 to 25 are detail slides, most of them unchanged from index.html, as backup for questions.
   The page editor (?edit) and tools/check.py only cover index.html, so edit this file by hand.
 
    1 Title                  5 HPCG on half the cores    9 UCL: metric and risk factors
@@ -66,7 +66,7 @@ html.read .trap{grid-template-columns:1fr}
         <li class="ag">
           <div class="rt-h"><span class="rt-n">01</span><b>Edinburgh</b><small>EPCC Cirrus</small></div>
           <div class="rt-task">Tune the HPL and HPCG benchmarks for speed and energy efficiency on 1 to 4 nodes.</div>
-          <div class="rt-row"><span class="caps2">What we found</span><p style="color:var(--ink)">HPL is most efficient on big problems. HPCG runs just as fast on half the cores.</p></div>
+          <div class="rt-row"><span class="caps2">What we found</span><p style="color:var(--ink)">HPL is most efficient on one node with a big problem. HPCG runs just as fast on half the cores.</p></div>
         </li>
         <li class="ag">
           <div class="rt-h"><span class="rt-n">02</span><b>Durham</b><small>DiRAC DINE</small></div>
@@ -87,35 +87,34 @@ html.read .trap{grid-template-columns:1fr}
   <!-- S3. Round 1: HPL tuning -->
   <section class="dk" data-round="1" style="gap:34px">
     <span class="rtag rise">Round 1 <i></i> Edinburgh</span>
-    <h2 class="t-h2">HPL: problem size mattered most, compiler flags barely at all</h2>
+    <h2 class="t-h2">HPL: three settings each added 15–24%, compiler flags under 2%</h2>
     <div class="levers rise">
-      <div class="lv" style="--k:0"><span class="lv-l">Problem size N<small>99,840 → 278,784 · 10% → 80% of memory</small></span><span class="lv-t"><i style="--v:48"></i></span><b>+48%</b></div>
-      <div class="lv" style="--k:1"><span class="lv-l">One MPI rank per chiplet<small>24 ranks × 12 threads instead of 8 × 36</small></span><span class="lv-t"><i style="--v:13"></i></span><b>+13%</b></div>
-      <div class="lv" style="--k:2"><span class="lv-l">Broadcast algorithm<small>BCAST 3 instead of the default 1</small></span><span class="lv-t"><i style="--v:4"></i></span><b>+4%</b></div>
+      <div class="lv" style="--k:0"><span class="lv-l">Problem size N<small>50,000 → 250,000</small></span><span class="lv-t"><i style="--v:22"></i></span><b>+22%</b></div>
+      <div class="lv" style="--k:1"><span class="lv-l">Block size NB<small>128 → 320</small></span><span class="lv-t"><i style="--v:24"></i></span><b>+24%</b></div>
+      <div class="lv" style="--k:2"><span class="lv-l">MPI ranks × OpenMP threads<small>288 × 1 → 72 × 4</small></span><span class="lv-t"><i style="--v:15"></i></span><b>+15%</b></div>
       <div class="lv off" style="--k:3"><span class="lv-l">Compiler flags<small>Cray -O2, -O3, -Ofast, -flto</small></span><span class="lv-t"><i style="--v:2"></i></span><b>≤2%</b></div>
-      <div class="lv off" style="--k:4"><span class="lv-l">CPU frequency cap<small>1.5, 1.8 and 2.2 GHz (not applied under load)</small></span><span class="lv-t"><i style="--v:0"></i></span><b>0%</b></div>
     </div>
-    <p class="t-lead wide rise">Speed and efficiency rose together in every test. None of these settings traded one for the other.</p>
-    <div class="srcl">HPL GFLOPS on one node, with each comparison made on a single node. Data from hpl/results/HPL_RESULTS.md, jobs 563364, 570197, 570191, 570247, 570203 and 570265.</div>
-    <aside class="notes">In Edinburgh we tuned HPL and HPCG for energy efficiency. For HPL we changed one setting at a time on one node. Problem size mattered most, because useful work grows faster than overhead. Matching MPI ranks to the chip's 12-core chiplets added 13%. Compiler flags did almost nothing, because the time is spent inside the vendor maths library. Speed and efficiency rose together in every test.</aside>
+    <p class="t-lead wide rise">A bigger problem also lifted efficiency, from 4.18 to 7.84 GFLOPS per watt.</p>
+    <div class="srcl">HPL GFLOPS on one node, one parameter per sweep with the rest held fixed. Data from our submitted EPCC report (jobs 563364 and 563656).</div>
+    <aside class="notes">• HPL solves one dense system Ax = b by LU factorisation. We changed one parameter at a time on one node, starting from N = 50,000.<br>• N, problem size. The matrix is N × N, so it takes 8N² bytes and memory sets the upper limit. Work grows as about ⅔N³ while setup, panel factorisation and communication grow as N², so a bigger N amortises that fixed overhead. 50,000 → 250,000 added 22% to GFLOPS.<br>• Why small N is slow. The term is N-half, the problem size at which a system reaches half its peak speed. Above it, speed climbs more slowly towards the peak, which is the flattening we see past 150,000.<br>• NB, block size. HPL cuts the matrix into NB × NB blocks, deals them out to the MPI ranks and feeds them to DGEMM. Bigger blocks reuse more data from cache and send fewer messages, but blocks that are too big leave some ranks idle near the end. 128 → 320 added 24%, and 384 was slower again.<br>• P × Q, ranks and threads. The MPI ranks form a P × Q grid and each rank owns a share of the blocks. OpenMP threads split each rank’s DGEMM. 72 × 4 was fastest at +15% over 288 × 1, and 32 × 9 was most efficient at 8.94 GFLOPS per watt.<br>• Compiler flags. They only change HPL’s own code. The time is spent in Cray LibSci’s precompiled DGEMM, so flags moved the result by under 2%.<br>• GFLOPS is ⅔N³ divided by solve time. GFLOPS per watt is that solve work divided by the whole job’s Slurm energy, so setup energy counts too. That is why raising N lifted GFLOPS per watt from 4.18 to 7.84.</aside>
   </section>
 
-  <!-- S4. Round 1: scaling at equal energy -->
+  <!-- S4. Round 1: scaling costs energy -->
   <section class="dk" data-round="1" style="gap:40px">
-    <h2 class="t-h2">On HPL, four nodes were 3.6× faster for the same energy</h2>
+    <h2 class="t-h2">On HPL, four nodes were 2.15× faster but used 64% more energy</h2>
     <div class="duo compact rise">
-      <div><span class="label" style="font-size:28px">1 node</span><span class="bignum">11:19</span><span>minutes to solve</span>
-        <div class="kv"><div>Energy used<b>0.815 MJ</b></div><div>Efficiency<b>12.8 GFLOPS/W</b></div></div></div>
-      <div><span class="label" style="font-size:28px;color:var(--accent)">4 nodes</span><span class="bignum">3:07</span><span>minutes to solve</span>
-        <div class="kv"><div>Energy used<b>0.815 MJ</b></div><div>Efficiency<b style="color:var(--ok)">12.8 GFLOPS/W</b></div></div></div>
+      <div><span class="label" style="font-size:28px">1 node</span><span class="bignum">72.5</span><span>seconds to solve</span>
+        <div class="kv"><div>Energy used<b>0.091 MJ</b></div><div>Efficiency<b style="color:var(--ok)">7.34 GFLOPS/W</b></div></div></div>
+      <div><span class="label" style="font-size:28px;color:var(--accent)">4 nodes</span><span class="bignum">33.7</span><span>seconds to solve</span>
+        <div class="kv"><div>Energy used<b style="color:var(--bad)">0.149 MJ</b></div><div>Efficiency<b style="color:var(--bad)">4.47 GFLOPS/W</b></div></div></div>
     </div>
     <div class="trap rise">
       <div><span>First we thought</span><p>our efficiency figures were right.</p></div>
       <div><span>Then we checked</span><p>what the formula divided by.</p></div>
       <div><span>It was actually</span><p>flattering short runs: the solve's work over the whole job's power. We fixed it.</p></div>
     </div>
-    <div class="srcl">HPL, N = 250,000, 1 vs 4 Cirrus nodes, both PASSED. Jobs 571593 and 571373. Efficiency = solve work ÷ whole-job energy. Data from hpl/results/SUMMARY.md.</div>
-    <aside class="notes">With the best settings, at our largest problem size, four nodes solved it 3.6 times faster for the same energy. So scaling out cost nothing in efficiency, once each node had enough work. One check mattered here. Our first formula divided the solve's work by the whole job's power, which flattered short runs. We fixed it before choosing our final runs.</aside>
+    <div class="srcl">HPL strong scaling, N = 100,000, NB 128, 256 MPI ranks over 1 to 4 Cirrus nodes. Efficiency = solve work ÷ whole-job Slurm energy. Data from our submitted EPCC report, HPL node sweep.</div>
+    <aside class="notes">• Set-up. Same N = 100,000 and the same 256 MPI ranks, spread over one to four nodes. This is strong scaling.<br>• Speed. Four nodes finished 2.15 times faster, which is 54% parallel efficiency against an ideal of four times.<br>• Efficiency. GFLOPS per watt fell from 7.34 on one node to 4.98 on two, 4.51 on three and 4.47 on four, 39% lower overall.<br>• Energy. Power rose 3.2 times while job time fell only 1.9 times, so energy to solution rose 64%.<br>• Why. Each extra node draws power for memory, networking and cooling even when its cores are idle, and with 64 ranks per node most of its 288 cores were idle. MPI traffic between nodes also takes time away from computation.<br>• Takeaway. For an efficiency score, one node with a large N was the better choice.<br>• The check. Our first formula divided the solve’s work by the whole job’s average power, which flattered short runs. We switched to whole-job energy before comparing runs.</aside>
   </section>
 
   <!-- S5. Round 1: half the cores -->
@@ -153,7 +152,7 @@ html.read .trap{grid-template-columns:1fr}
     </div>
     <p class="t-lead wide rise">DINE2 has twice the cores of DINE but only 1.7 times the bandwidth, so each core gets less memory: 6.2 against 7.2 GB/s.</p>
     <div class="srcl">Medians of 3 runs of peakflops_sp (AVX or AVX-512 FMA) and triad_mem (non-temporal stores). Compute spec is sockets × cores × base GHz × FLOP per cycle. Memory spec assumes the rated DIMM speed, which we could not verify. Data from analysis/overnight-20261022T224854Z/ceilings.csv and report/report.tex.</div>
-    <aside class="notes">In Durham we first measured two nodes with LIKWID. DINE is a 32-core AMD node, DINE2 a 64-core Intel node. Both slightly beat their compute spec, which we put down to turbo. Memory bandwidth reached only 56% and 71% of spec. DINE2 has twice the cores but only 1.7 times the bandwidth, so each of its cores gets less memory.</aside>
+    <aside class="notes">• How we found each limit. We ran each likwid-bench kernel at several thread counts and placements, three times each. The limit is the highest full-node median, not the single fastest run, so one lucky run cannot inflate it.<br>• Compute limit, peakflops_sp. It runs fused multiply-adds on the widest vectors, AVX2 on DINE and AVX-512 on DINE2, using data that stays in registers and L1 cache. Memory is never involved, so the only thing it can hit is how fast the cores calculate.<br>• Memory limit, triad_mem. It computes a = b + c × d over 2 GB, far more than any cache, so every byte comes from main memory. It does only 2 FLOPs per 24 bytes or so, so the cores are never the bottleneck. Its non-temporal stores write straight to memory and skip the extra read a normal store causes.<br>• Why triad and not read-only. Triad reads and writes, like real codes do. A read-only kernel reached 439.5 GB/s on DINE2, so this limit depends on the access pattern.<br>• Against the vendor spec. Compute came out 8 to 9% above the base-clock spec, which we attribute to turbo. Bandwidth reached 56% of the DIMM-rated bound on DINE and 71% on DINE2. That bound is never reached in practice, and we could not verify the DIMM speeds.<br>• Ridge point. Compute limit divided by memory limit. Any code below about 15 FLOPs per byte on DINE, or 23 on DINE2, is limited by memory.</aside>
   </section>
 
   <!-- S7. Round 2: roofline -->
@@ -263,6 +262,20 @@ html.read .trap{grid-template-columns:1fr}
 
   <!-- ===================== BACKUP (original slides) ===================== -->
 
+  <!-- B2. Approach (new in index.html) -->
+  <section class="dk" style="gap:40px">
+    <h2 class="t-h2">We worked through each round in the same five steps</h2>
+    <div class="concl rise">
+      <div><span class="rt-n">01</span><p><b>Get access.</b> Log in, check the hardware and modules, and run a small test job.</p></div>
+      <div><span class="rt-n">02</span><p><b>Understand the problem.</b> Read up on HPL, rooflines or decision trees, and run a baseline.</p></div>
+      <div><span class="rt-n">03</span><p><b>Vary one parameter per experiment.</b> Sweep a single parameter with all others held constant to identify its optimal value.</p></div>
+      <div><span class="rt-n">04</span><p><b>Run systematic job campaigns.</b> Submit each sweep as a batch of jobs, monitor them with squeue and retain every raw result.</p></div>
+      <div><span class="rt-n">05</span><p><b>Plot and interpret.</b> Draw every figure from the raw data with a script, then write up what it shows.</p></div>
+    </div>
+    <p class="t-lead wide rise">Rounds 1 and 2 were benchmark sweeps. Round 3 was a modelling problem, so step 3 meant comparing models and settings on the same data split.</p>
+    <aside class="notes">Before the results, here is how we approached every round. First we got onto the nodes and checked what we had. Then we read up on the problem and ran a baseline. For the benchmarks we varied one parameter per experiment with all others held constant, submitted each sweep as a batch of jobs, monitored them with squeue and retained all the raw output. Every plot came from a script, and we wrote up our interpretation last. Round 3 was a modelling task rather than a benchmark, so the sweep became a fair comparison of models on the same data split.</aside>
+  </section>
+
   <!-- B3. original slide 3 -->
   <section class="dk" data-round="1" style="gap:48px">
     <span class="rtag rise">Round 1 <i></i> EPCC Cirrus <i></i> Edinburgh</span>
@@ -292,7 +305,7 @@ html.read .trap{grid-template-columns:1fr}
     </div>
     <p class="t-lead wide rise">HPL spends its time in dense matrix multiply, which reuses each operand many times from cache. HPCG spends its time in sparse matrix-vector products and a Gauss-Seidel smoother, which use most values once before moving on.</p>
     <div class="srcl">HPL job 571593 (N = 250,000). HPCG job 571314 (30-minute VALID run, 144 ranks × 2 cores). The GFLOPS ratio is 114 and the GFLOPS per watt ratio is 93. Data from hpl/results/SUMMARY.md and hpcg/results/SUMMARY.md.</div>
-    <aside class="notes">Both benchmarks ran on the same node type at a similar power draw. HPCG delivered 114 times fewer GFLOPS. The two codes do very different work per byte loaded. Dense matrix multiply reuses data from cache. Sparse kernels read each value and move on. Our expectation was that HPCG is limited by memory, and the next slide is how we tested that on Cirrus.</aside>
+    <aside class="notes">• Both benchmarks ran on one Cirrus node at a similar power draw.<br>• HPL reached 15,345 GFLOPS and HPCG 134.5, so HPCG delivered 114 times fewer GFLOPS.<br>• HPL spends its time in dense matrix multiply, which reuses each value many times from cache.<br>• HPCG spends its time in sparse kernels, which read each value once and move on.<br>• So we expected HPCG to be limited by memory. The next slide is how we tested that on Cirrus.</aside>
   </section>
 
   <!-- B8. original slide 8 -->
@@ -301,7 +314,7 @@ html.read .trap{grid-template-columns:1fr}
     <div class="cols rise" style="grid-template-columns:1.12fr 1fr;gap:48px;align-items:stretch">
       <div class="tiles">
         <div><span class="label">HPL · 1 node · most efficient</span><span class="n"><span data-count data-from="0" data-to="12.79" data-dec="2">12.79</span><small>GFLOPS/W</small></span><span class="m">15,345 GFLOPS · job 571593</span></div>
-        <div><span class="label">HPL · 4 nodes · fastest</span><span class="n"><span data-count data-from="0" data-to="55805">55,805</span><small>GFLOPS</small></span><span class="m">12.78 GFLOPS/W · job 571373</span></div>
+        <div><span class="label">HPL · 4 nodes · fastest</span><span class="n"><span data-count data-from="0" data-to="19770">19,770</span><small>GFLOPS</small></span><span class="m">4.47 GFLOPS/W · N = 100,000 sweep</span></div>
         <div><span class="label">HPCG · 1 node · most efficient</span><span class="n"><span data-count data-from="0" data-to="0.1376" data-dec="4">0.1376</span><small>GFLOPS/W</small></span><span class="m">134.5 GFLOPS · 30 min VALID · job 571314</span></div>
         <div><span class="label">HPCG · 4 nodes · fastest</span><span class="n"><span data-count data-from="0" data-to="531.8" data-dec="1">531.8</span><small>GFLOPS</small></span><span class="m">99% of 1-node speed per node · job 570231</span></div>
       </div>
@@ -453,7 +466,7 @@ html.read .trap{grid-template-columns:1fr}
     <h2 class="t-h2">Limitations of these results</h2>
     <div class="lim rise">
       <div><span class="caps2">EPCC Cirrus</span>
-        <p>The CPU frequency cap was not applied under HPL load, so the energy effect of lower clocks remains untested.</p>
+        <p>We did not isolate which components drew the extra power on multiple nodes.</p>
         <p>GFLOPS per watt includes setup energy before the timed solve, so all efficiency figures are conservative.</p></div>
       <div><span class="caps2">DiRAC DINE</span>
         <p>Counter-based intensity averages over the whole process and cannot be assigned to one Grid kernel.</p>
@@ -462,7 +475,7 @@ html.read .trap{grid-template-columns:1fr}
         <p>The test set holds 60 resistant patients, so model differences below one standard deviation are not meaningful.</p>
         <p>The data under-represents White patients and covers only ages 20 to 79, so the model may not generalise.</p></div>
     </div>
-    <aside class="notes">Each round has limits we want to state plainly. On Cirrus, the frequency cap was never applied under load, so we have no evidence either way on lower clocks. On DINE, our intensity numbers come from whole-process counters, and the memory specification assumes DIMM speeds we could not check. For the UCL model, the test set is small and the data is not representative, so the model should not be read as a clinical result.</aside>
+    <aside class="notes">Each round has limits we want to state plainly. On Cirrus, we saw extra power on multiple nodes but did not measure which components drew it. On DINE, our intensity numbers come from whole-process counters, and the memory specification assumes DIMM speeds we could not check. For the UCL model, the test set is small and the data is not representative, so the model should not be read as a clinical result.</aside>
   </section>
 
   <!-- B22. original slide 22 -->
@@ -492,7 +505,7 @@ html.read .trap{grid-template-columns:1fr}
   <section class="dk" style="gap:44px">
     <h2 class="t-h2">Conclusions</h2>
     <div class="concl rise">
-      <div><span class="rt-n">01</span><p>HPL efficiency on Cirrus is set mainly by problem size per node. With enough work per node, energy to solution did not change from 1 to 4 nodes.</p></div>
+      <div><span class="rt-n">01</span><p>HPL efficiency on Cirrus is set mainly by problem size per node. Four nodes ran 2.15 times faster but used 64% more energy than one.</p></div>
       <div><span class="rt-n">02</span><p>Grid is bandwidth-bound on both DiRAC nodes, at 61–71% of the memory roof. Thread placement mattered more than the choice of compiler.</p></div>
       <div><span class="rt-n">03</span><p>Age is the only factor in the UCL dataset that beats a permutation null. A readable depth-3 tree performs within noise of a random forest.</p></div>
     </div>
@@ -505,7 +518,7 @@ html.read .trap{grid-template-columns:1fr}
       </div>
     </div>
     <div class="foot rise" style="font-size:22px"><span>UCLuster Too · Ada Ge, Bobby Ta, Eric Huang, James Loke</span><span>Round 3 data is synthetic. Rounds 1 and 2 are measured runs.</span></div>
-    <aside class="notes">To conclude. On Cirrus, problem size per node set HPL efficiency, and scaling out did not cost energy once each node had enough work. On DINE, Grid is bandwidth-bound, and placement mattered more than the compiler. For the UCL data, age is the only factor that beats a permutation null, and the readable tree performs as well as the forest within noise. The code and logs for each round are in these repositories. The Cirrus one is private and available on request.</aside>
+    <aside class="notes">To conclude. On Cirrus, problem size per node set HPL efficiency, and scaling out bought speed at an energy cost of 64%. On DINE, Grid is bandwidth-bound, and placement mattered more than the compiler. For the UCL data, age is the only factor that beats a permutation null, and the readable tree performs as well as the forest within noise. The code and logs for each round are in these repositories. The Cirrus one is private and available on request.</aside>
   </section>
 
   <div class="chap" id="chap" aria-hidden="true"><span data-r="1"><b>1</b>Edinburgh</span><span data-r="2"><b>2</b>Durham</span><span data-r="3"><b>3</b>UCL</span></div>
