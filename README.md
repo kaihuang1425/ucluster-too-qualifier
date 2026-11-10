@@ -4,6 +4,7 @@ These are the slides for our CIUK Cluster Challenge 2026 qualifier presentation.
 
 **Live site** → https://ucluster-too-qualifier.vercel.app
 **Edit it on the page** → https://ucluster-too-qualifier.vercel.app/?edit
+**PowerPoint copy** → [UCLuster-Too-qualifier.pptx](https://github.com/kaihuang1425/ucluster-too-qualifier/releases/download/pptx-latest/UCLuster-Too-qualifier.pptx), rebuilt from `main` after every change
 
 Every change to `main` updates the live site within about a minute. Nothing needs installing to edit a slide.
 
@@ -89,6 +90,7 @@ python tools/test_editor.py
 | `lib/htmlmap.mjs` | finds each slide element in `index.html`, for the editor and `api/` | rarely |
 | `tools/check.py` | the automatic check | the rules change |
 | `tools/test_editor.py` | the page editor's own test, against a stand-in GitHub | the editor changes |
+| `tools/export_pptx.py` | builds the PowerPoint copies | the export changes |
 
 ## Common edits on GitHub
 
@@ -164,6 +166,19 @@ Teammates sign in with their own GitHub accounts through a small GitHub App. Git
 6. **Try it.** Open https://ucluster-too-qualifier.vercel.app/?edit, change a word, and press **Publish**. GitHub asks you to authorise the app the first time.
 
 If the secret ever leaks, generate a new one on the app's page, update `GITHUB_CLIENT_SECRET` in Vercel, redeploy, and delete the old secret. Everyone then signs in again.
+
+## PowerPoint copy
+
+Every change to `main` rebuilds two PowerPoint files and attaches them to the [PowerPoint copy release](https://github.com/kaihuang1425/ucluster-too-qualifier/releases/tag/pptx-latest). Both have all 23 slides at 16:9 with the speaker notes.
+
+- [**UCLuster-Too-qualifier.pptx**](https://github.com/kaihuang1425/ucluster-too-qualifier/releases/download/pptx-latest/UCLuster-Too-qualifier.pptx) rebuilds every slide from PowerPoint's own shapes. Panels, bars, dots and lines are separate shapes, every word is a text box, and nothing is a picture. Each chart and the core map on slide 7 is a group, so it moves as one piece and can be ungrouped to edit a single line, point or label.
+- [**UCLuster-Too-qualifier-pictures.pptx**](https://github.com/kaihuang1425/ucluster-too-qualifier/releases/download/pptx-latest/UCLuster-Too-qualifier-pictures.pptx) shows every slide as one picture. It looks identical on every computer, but nothing can be edited. Use it to present or to submit.
+
+The shapes file matches the web deck where the fonts Google Sans Flex and Google Sans Code are installed. Both are free from [Google Fonts](https://fonts.google.com/?query=google+sans), and Google Slides has them built in. Without them PowerPoint picks a similar font, so words look slightly different and long lines run a little wider. PowerPoint offers only regular and bold, so words the web shows in a light or medium weight appear in regular. Lines break where they break on the web, so if you reword a sentence, delete the old line break too.
+
+The charts are drawn shapes, not PowerPoint chart objects, so a changed number means moving its point by hand. Their numbers live in `DECK_DATA` in `deck.js`, and the next export redraws them.
+
+The web deck stays the source. Edits made in PowerPoint do not reach the site or the next export, so make lasting changes here and download a fresh copy. To build the files yourself, run `python tools/export_pptx.py` after `pip install python-pptx`. They land in `export/`, which is not committed.
 
 ## Where the numbers come from
 
