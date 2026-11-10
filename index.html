@@ -121,21 +121,27 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
 
   <!-- ===================== ROUND 2 · DiRAC DURHAM ===================== -->
 
-  <!-- 6. Compute and bandwidth -->
-  <section class="dk" data-round="2" style="gap:24px">
-    <h2 class="t-h2">We measured compute and memory ceilings on both Durham nodes</h2>
-    <div class="stack rise" style="--gap:18px">
-      <div class="cl-head"><span></span><span><em>spec</em></span><span></span></div>
-      <div class="ceil">
-        <div class="cl" style="--k:0"><span class="cl-l">DINE · FP32 compute<small>3,341 of 3,072 GFLOP/s at base clock</small></span><span class="cl-t"><i style="--v:109"></i></span><b>109%</b></div>
-        <div class="cl" style="--k:1"><span class="cl-l">DINE2 · FP32 compute<small>9,287 of 8,602 GFLOP/s at base clock</small></span><span class="cl-t"><i style="--v:108"></i></span><b>108%</b></div>
-        <div class="cl mem" style="--k:2"><span class="cl-l">DINE · memory bandwidth<small>231 of 410 GB/s</small></span><span class="cl-t"><i style="--v:56"></i></span><b>56%</b></div>
-        <div class="cl mem" style="--k:3"><span class="cl-l">DINE2 · memory bandwidth<small>398 of 563 GB/s</small></span><span class="cl-t"><i style="--v:71"></i></span><b>71%</b></div>
+  <!-- 6. DINE against DINE2 -->
+  <section class="dk" data-round="2" style="gap:30px">
+    <h2 class="t-h2">DINE2 has 2.78 times DINE’s compute but only 1.72 times its memory bandwidth</h2>
+    <div class="facts rise">
+      <div><b>2.78×</b><span>FP32 compute. 9,287 against 3,341 GFLOP/s with likwid-bench peakflops_sp</span></div>
+      <div><b>1.72×</b><span>memory bandwidth. 398 against 231 GB/s with likwid-bench triad_mem</span></div>
+      <div><b>23.3 vs 14.5</b><span>FLOPs per byte a code needs before compute becomes its limit</span></div>
+      <div><b>6.2 vs 7.2</b><span>GB/s of memory bandwidth per core, DINE2 against DINE</span></div>
+    </div>
+    <div class="rise stack" style="--gap:18px">
+      <span class="caps2">Four likwid-bench sweeps on each node</span>
+      <div class="sweeps">
+        <div><span class="caps2">Kernel type</span><code>peakflops, sse, avx, avx_fma, avx512_fma</code><p>Scalar code reached only 16% of DINE’s vector FMA peak. AVX-512 ran 1.82× faster than AVX2 on DINE2.</p></div>
+        <div><span class="caps2">Thread count</span><code>peakflops, load, copy, stream</code><p>DINE held 105 GFLOP/s per core at every count. DINE2 fell from 210 to 146 per core as its clock dropped.</p></div>
+        <div><span class="caps2">Access pattern and placement</span><code>load, copy, triad, triad_mem</code><p>Spreading 32 threads over both DINE2 sockets gave 366 GB/s, against 195 with one socket filled first.</p></div>
+        <div><span class="caps2">Working-set size</span><code>load, copy, triad on one core</code><p>From L3, one DINE core streamed 83.6 GB/s against 31.4 on DINE2.</p></div>
       </div>
     </div>
-    <p class="t-lead wide rise">Divide measured compute throughput by memory bandwidth to get the ridge point. Below about 14.5 FLOPs per byte on DINE and 23.3 on DINE2, memory sets the ceiling.</p>
-    <div class="srcl">Medians of 3 full-node likwid-bench runs of peakflops_sp (AVX or AVX-512 FMA) and triad_mem (non-temporal stores). Compute spec is sockets × cores × base GHz × FLOP per cycle. Memory spec assumes the rated DIMM speed, which we could not verify. Data from analysis/overnight-20261022T224854Z/ceilings.csv and report/report.tex.</div>
-    <aside class="notes">In Durham, we asked what limited Grid, a lattice QCD code. We used LIKWID to measure compute throughput and memory bandwidth separately. Compute beat the base-clock figures. Bandwidth reached 56 percent of the estimated maximum on DINE and 71 on DINE2. Dividing compute throughput by bandwidth gave us the ridge points.<span class="bg">DINE has 32 AMD EPYC 7302 cores and DINE2 has 64 Intel Xeon Gold 6430 cores. The peak FLOP kernel slightly exceeded the base-clock specification on both, which we attribute to turbo. The ridge points are about 14.5 FLOPs per byte on DINE and 23.3 on DINE2.</span></aside>
+    <p class="t-lead wide rise">DINE2 is far faster at maths, but its memory did not keep up. A memory-bound code should gain closer to 1.7 times than 2.8 times on DINE2.</p>
+    <div class="srcl">Full-node medians of 3 likwid-bench runs, one thread per physical core. Compute from peakflops_sp with AVX2 FMA on DINE and AVX-512 FMA on DINE2. Bandwidth from triad_mem with non-temporal stores over 2 GB. Sweeps from the likwid-flops, likwid-threads, likwid-bw and likwid-sizes results folders. Data from analysis/overnight-20261022T224854Z/ceilings.csv and report/report.tex.</div>
+    <aside class="notes">In Durham, the brief asked us to measure each node’s compute and memory capability with LIKWID and compare the two nodes. DINE2 does 2.78 times as many FLOPs as DINE, but moves only 1.72 times as much data from memory. So each DINE2 core gets less bandwidth, and a code must do more work per byte, 23 FLOPs against 15, before compute becomes its limit. To find these limits we swept kernel type, thread count, access pattern and placement, and working-set size on each node.<span class="bg">DINE has 32 AMD EPYC 7302 cores with AVX2. DINE2 has 64 Intel Xeon Gold 6430 cores with AVX-512. Compute grew 2.78 times because DINE2 has twice the cores and vectors twice as wide, at a lower clock, 2.1 against 3.0 GHz, which gives about 2 × 2 × 0.7. Bandwidth grew only 1.72 times because both nodes have eight memory channels per socket, and DINE2’s faster DDR5 adds nothing like twice the cores’ worth. peakflops_sp runs fused multiply-adds on data held in registers and L1 cache, so memory is never involved. triad_mem computes a = b + c × d over 2 GB, far more than any cache, so every byte comes from main memory. Each limit is the highest full-node median over several thread counts and placements, so one lucky run cannot inflate it. Kernel type. We ran peakflops scalar, SSE, AVX, AVX FMA and AVX-512 FMA, in single and double precision. Scalar double precision on DINE reached 274.4 GFLOP/s, 16.4% of the vector FMA peak, and AVX-512 FMA ran 1.82 times faster than AVX2 FMA on DINE2. So the compute limit only applies to code that uses wide vectors and FMA, which is why each Grid build targeted znver2 or sapphirerapids. Thread count. DINE held about 105 GFLOP/s per core at every count. DINE2 fell from about 210 per core on up to 8 cores to 146 on 32, which fits the clock dropping to stay within power limits under AVX-512. Access pattern. In GB/s on DINE and DINE2, read-only load gave 219.8 and 439.5, non-temporal triad 231.0 and 397.9, normal triad 180.5 and 393.2, and copy 156.4 and 321.9. Non-temporal stores gave DINE 28% more than normal triad because they skip the extra read a normal store causes, but made almost no difference on DINE2. Grid’s own streaming kernel reached 173.6 and 350.1 GB/s, close to normal triad, so Grid’s simple kernels do reach the memory limit. Placement. On DINE2, 32 threads spread over both sockets gave 365.5 GB/s against 195.4 with one socket filled first, so one socket saturates at about 16 cores and 182 GB/s. So thread placement matters on DINE2. Working-set size. On one core, bandwidth stepped down at each cache level. From L3, DINE reached 83.6 GB/s against 31.4 on DINE2, because DINE has small L3 slices close to each core while DINE2 spreads its L3 across the socket. This is why small Grid lattices that fit in cache ran much faster, 848 GFLOP/s at L = 16 on DINE and about 2,700 at L = 12 on DINE2.</span></aside>
   </section>
 
   <!-- 7. Roofline -->
@@ -375,7 +381,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
       <div class="mbar"><i class="hi" style="--w:20"><b>20</b>LIKWID · DINE</i><i class="hi" style="--w:20"><b>20</b>LIKWID · DINE2</i><i style="--w:10"><b>10</b>Node vs node</i><i style="--w:10"><b>10</b>Grid · DINE</i><i style="--w:10"><b>10</b>Grid · DINE2</i><i style="--w:10"><b>10</b>Grid vs LIKWID</i><i style="--w:10"><b>10</b>Best case</i><i style="--w:10"><b>10</b>Time use</i></div>
     </div>
     <div class="srcl">Scoring from Durham_Cluster_Challenge_2026.pdf, section 7. Hardware from report/report.tex, table 1. Recon jobs 12198164 (DINE) and 12202855 (DINE2) ran before any benchmark.</div>
-    <aside class="notes">The Durham brief asked how close each node gets to its vendor specification, and where the Grid lattice QCD benchmark sits between the compute and bandwidth limits. That was the measurement we had been missing on Cirrus. The two nodes differ in vendor and in core count, which made the comparison useful.</aside>
+    <aside class="notes">The Durham brief asked us to measure each node’s compute and memory capability with LIKWID, compare the two nodes head to head, and show where the Grid lattice QCD benchmark sits between those limits. That was the measurement we had been missing on Cirrus. The two nodes differ in vendor and in core count, which made the comparison useful.</aside>
   </section>
 
   <!-- 19. Strong scaling -->
@@ -470,12 +476,12 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
         <p>GFLOPS per watt includes setup energy before the timed solve, so all efficiency figures are conservative.</p></div>
       <div><span class="caps2">DiRAC DINE</span>
         <p>Counter-based intensity averages over the whole process and cannot be assigned to one Grid kernel.</p>
-        <p>DIMM speeds were not verified, so the memory specification is an upper bound.</p></div>
+        <p>Measured bandwidth depends on the access pattern. A read-only kernel reached 439.5 GB/s on DINE2 against 398 for triad, so the 1.72 times ratio is for triad.</p></div>
       <div><span class="caps2">UCL Condenser</span>
         <p>The test set holds only 60 resistant patients, and the competitive models differ by less than one fold-to-fold standard deviation, so we cannot claim that one model is better.</p>
         <p>White patients are 17.6% of records against 81.7% in the census, and ages run only from 20 to 79, so the model may not generalise.</p></div>
     </div>
-    <aside class="notes">Each round has limits we want to state plainly. On Cirrus, we saw extra power on multiple nodes but did not measure which components drew it. On DINE, our intensity numbers come from whole-process counters, and the memory specification assumes DIMM speeds we could not check. For the UCL model, the test set is small and the data is not representative, so the model should not be read as a clinical result.</aside>
+    <aside class="notes">Each round has limits we want to state plainly. On Cirrus, we saw extra power on multiple nodes but did not measure which components drew it. On DINE, our intensity numbers come from whole-process counters, and the bandwidth we compare depends on the access pattern, so the ratio is for triad. For the UCL model, the test set is small and the data is not representative, so the model should not be read as a clinical result.</aside>
   </section>
 
   <!-- 24. Team -->
