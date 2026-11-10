@@ -100,7 +100,7 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
 
   <!-- 5. HPCG on half the cores -->
   <section class="dk" data-round="1" style="gap:36px">
-    <h2 class="t-h2">HPCG held its throughput at 7% lower power</h2>
+    <h2 class="t-h2">HPCG throughput stayed the same at 7% lower power</h2>
     <div class="nodes2 rise">
       <div>
         <span class="label">288 ranks × 1 core</span>
@@ -113,9 +113,9 @@ document.documentElement.className += (function () { var m = /[?&]mode=(read|sli
         <div class="kv"><div>GFLOPS<b>134.5</b></div><div>Power<b>977 W</b></div><div>GFLOPS/W<b style="color:var(--ok)">0.1376</b></div></div>
       </div>
     </div>
-    <p class="t-lead wide rise">Both runs used one thread per rank. With 144 ranks, half the cores sat idle. A bandwidth limit or a change in MPI overhead could explain why throughput held.</p>
+    <p class="t-lead wide rise">Both runs used one thread per rank. With 144 ranks, half the cores sat idle. A bandwidth limit or a change in MPI overhead could explain why throughput stayed the same.</p>
     <div class="srcl">30-minute VALID finals on the same binary and total problem size, split differently into ranks. Job 570229 (288 × 1) against job 571314 (144 × 2) gives +8.1% GFLOPS per watt. Pure MPI ran 1.95 times faster than 24 × 12 because the reference smoother is not threaded. Data from hpcg/results/SUMMARY.md, sections B, F and G.</div>
-    <aside class="notes">We kept the binary and global problem fixed and halved the MPI ranks. Each rank still had one thread, so half the cores sat idle. Throughput held at seven percent lower power, making fewer ranks the more efficient choice. Bandwidth and MPI overhead were both plausible explanations.<span class="bg">Each of the 144 ranks had two cores but one thread, so half the cores sat idle. GFLOPS per watt rose 8% over a full 30-minute valid run. Pure MPI ran 1.95 times faster than 24 ranks × 12 threads because the reference smoother is not threaded. Our EPCC report notes that we did not isolate the bottleneck on Cirrus.</span></aside>
+    <aside class="notes">We kept the binary and global problem fixed and halved the MPI ranks. Each rank still had one thread, so half the cores sat idle. Throughput stayed the same at seven percent lower power, making fewer ranks the more efficient choice. Bandwidth and MPI overhead were both plausible explanations.<span class="bg">Each of the 144 ranks had two cores but one thread, so half the cores sat idle. GFLOPS per watt rose 8% over a full 30-minute valid run. Pure MPI ran 1.95 times faster than 24 ranks × 12 threads because the reference smoother is not threaded. Our EPCC report notes that we did not isolate the bottleneck on Cirrus.</span></aside>
   </section>
 
   <!-- ===================== ROUND 2 · DiRAC DURHAM ===================== -->
