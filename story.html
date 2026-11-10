@@ -35,17 +35,17 @@ html.read .trap{grid-template-columns:1fr}
 </head>
 <body>
 <!--
-  5-MINUTE VERSION of index.html. Slides 1 to 10 are the talk (about 560 spoken words).
-  Slide 11 is a divider, and 12 to 25 are detail slides, most of them unchanged from index.html, as backup for questions.
+  5-MINUTE VERSION of index.html. Slides 1 to 11 are the talk (about 620 spoken words).
+  Slide 12 is a divider, and 13 to 25 are detail slides, most of them unchanged from index.html, as backup for questions.
   The page editor (?edit) and tools/check.py only cover index.html, so edit this file by hand.
 
-   1 Title                  5 HPCG on half the cores    9 UCL: metric and risk factors
-   2 Three separate tasks   6 Node ceilings vs spec    10 A check changed each first answer
-   3 HPL tuning             7 Grid is memory-limited
-   4 HPL, 1 vs 4 nodes      8 Thread placement
+   1 Title                  5 HPL, 1 vs 4 nodes         9 Thread placement
+   2 Three separate tasks   6 HPCG on half the cores   10 UCL: metric and risk factors
+   3 Approach               7 Node ceilings vs spec    11 A check changed each first answer
+   4 HPL tuning             8 Grid is memory-limited
 -->
 <div class="stage" id="stage">
-  <!-- ===================== 5-MINUTE STORY (slides 1–9) ===================== -->
+  <!-- ===================== 5-MINUTE STORY (slides 1–11) ===================== -->
 
   <!-- S1. Title -->
   <section class="dk">
@@ -82,6 +82,20 @@ html.read .trap{grid-template-columns:1fr}
     </div>
     <p class="t-lead wide rise">In each one, a simple check changed our first answer.</p>
     <aside class="notes">We did three separate rounds on three machines: benchmarking in Edinburgh, performance analysis in Durham, and a prediction model at UCL. The tasks were unrelated, but one thing happened in all three: a simple check changed our first answer. We'll show one result and one check from each.</aside>
+  </section>
+
+  <!-- S2b. Approach -->
+  <section class="dk" style="gap:40px">
+    <h2 class="t-h2">Every round, we followed the same five steps</h2>
+    <div class="concl rise">
+      <div><span class="rt-n">01</span><p><b>Get access.</b> Log in, check the hardware, run a test job.</p></div>
+      <div><span class="rt-n">02</span><p><b>Understand the problem.</b> Read up, then run a baseline.</p></div>
+      <div><span class="rt-n">03</span><p><b>Change one thing at a time.</b> Hold everything else fixed.</p></div>
+      <div><span class="rt-n">04</span><p><b>Run sweeps as batches of jobs.</b> Keep every raw result.</p></div>
+      <div><span class="rt-n">05</span><p><b>Plot from the raw data.</b> Then write up what it shows.</p></div>
+    </div>
+    <p class="t-lead wide rise">At UCL, step 3 meant comparing models on the same data split.</p>
+    <aside class="notes">• Before the results, here is how we approached every round.<br>• Get access. Log in, check the hardware and modules, and run a small test job.<br>• Understand the problem. Read up on HPL, rooflines or decision trees, and run a baseline.<br>• Vary one parameter per experiment, with all others held constant.<br>• Submit each sweep as a batch of jobs, monitor them with squeue and keep every raw result.<br>• Every plot comes from a script, and we write up our interpretation last.<br>• Round 3 was a modelling task rather than a benchmark, so the sweep became a fair comparison of models on the same data split.</aside>
   </section>
 
   <!-- S3. Round 1: HPL tuning -->
@@ -261,20 +275,6 @@ html.read .trap{grid-template-columns:1fr}
   </section>
 
   <!-- ===================== BACKUP (original slides) ===================== -->
-
-  <!-- B2. Approach (new in index.html) -->
-  <section class="dk" style="gap:40px">
-    <h2 class="t-h2">We worked through each round in the same five steps</h2>
-    <div class="concl rise">
-      <div><span class="rt-n">01</span><p><b>Get access.</b> Log in, check the hardware and modules, and run a small test job.</p></div>
-      <div><span class="rt-n">02</span><p><b>Understand the problem.</b> Read up on HPL, rooflines or decision trees, and run a baseline.</p></div>
-      <div><span class="rt-n">03</span><p><b>Vary one parameter per experiment.</b> Sweep a single parameter with all others held constant to identify its optimal value.</p></div>
-      <div><span class="rt-n">04</span><p><b>Run systematic job campaigns.</b> Submit each sweep as a batch of jobs, monitor them with squeue and retain every raw result.</p></div>
-      <div><span class="rt-n">05</span><p><b>Plot and interpret.</b> Draw every figure from the raw data with a script, then write up what it shows.</p></div>
-    </div>
-    <p class="t-lead wide rise">Rounds 1 and 2 were benchmark sweeps. Round 3 was a modelling problem, so step 3 meant comparing models and settings on the same data split.</p>
-    <aside class="notes">Before the results, here is how we approached every round. First we got onto the nodes and checked what we had. Then we read up on the problem and ran a baseline. For the benchmarks we varied one parameter per experiment with all others held constant, submitted each sweep as a batch of jobs, monitored them with squeue and retained all the raw output. Every plot came from a script, and we wrote up our interpretation last. Round 3 was a modelling task rather than a benchmark, so the sweep became a fair comparison of models on the same data split.</aside>
-  </section>
 
   <!-- B3. original slide 3 -->
   <section class="dk" data-round="1" style="gap:48px">
