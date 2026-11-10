@@ -229,9 +229,18 @@ var DECK_DATA = {
     var s = slides[cur], a = s.querySelector('.notes'), c = a ? a.cloneNode(true) : null, bg = c && c.querySelector('.bg'), k = talk.indexOf(s), t = timing();
     if (bg) c.removeChild(bg);
     chan.postMessage({ type: 'state', n: cur, k: k, talk: talk.length, label: counter.textContent, title: headOf(s), next: headOf(slides[cur + 1]),
-      script: c ? c.innerHTML : '', bg: bg ? bg.innerHTML : '', secs: k < 0 ? 0 : t.rows[k], ends: k < 0 ? 0 : t.ends[k], total: t.total, limit: t.limit });
+      script: c ? c.innerHTML : '', bg: bg ? bg.innerHTML : '', secs: k < 0 ? 0 : t.rows[k], ends: k < 0 ? 0 : t.ends[k], total: t.total, limit: t.limit,
+      slides: slides.map(function (x) { return { title: headOf(x), backup: x.hasAttribute('data-backup') }; }) });
   }
-  if (chan) chan.onmessage = function (e) { var m = e.data || {}; if (m.type === 'go') go(m.n); else if (m.type === 'step') go(cur + m.d); else if (m.type === 'hello') tell(); };
+  // The presenter's Q&A names a slide by something only that slide holds. This finds which slide that is now.
+  function resolve(sels) {
+    var where = {};
+    (sels || []).forEach(function (q) {
+      try { for (var i = 0; i < slides.length; i++) if (slides[i].matches(q) || slides[i].querySelector(q)) { where[q] = i; break; } } catch (e) {}
+    });
+    return where;
+  }
+  if (chan) chan.onmessage = function (e) { var m = e.data || {}; if (m.type === 'go') go(m.n); else if (m.type === 'step') advance(m.d); else if (m.type === 'hello') tell(); else if (m.type === 'resolve') chan.postMessage({ type: 'resolved', where: resolve(m.sels) }); };
   function showNotes() { var a = slides[cur].querySelector('.notes'); notes.innerHTML = '<b>' + timeLine(slides[cur]) + '</b>' + (a ? a.innerHTML : 'No notes for this slide.'); }
   function go(n) {
     if (READ) return;
@@ -251,6 +260,13 @@ var DECK_DATA = {
     history.replaceState(null, '', '#' + (n + 1));
     if (window.DECK && DECK.onchange) DECK.onchange(n);
     tell();
+  }
+
+  // Next and back from the keyboard, a click or a swipe. The talk stops on its last slide, so one press too many
+  // never shows an optional slide by accident. B, the presenter's Q&A or a slide number in the address open them.
+  function advance(d) {
+    if (!EDIT && d > 0 && backup.length && cur === talk.length - 1) return;
+    go(cur + d);
   }
 
   var io = null;
@@ -293,9 +309,10 @@ var DECK_DATA = {
   addEventListener('keydown', function (e) {
     if (READ || typing(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
     if (EDIT && (e.key === 'n' || e.key === 'N' || e.key === 'Backspace')) return;
-    if (['ArrowRight', 'PageDown', ' ', 'Enter'].indexOf(e.key) >= 0) { e.preventDefault(); go(cur + 1); }
-    else if (['ArrowLeft', 'PageUp', 'Backspace'].indexOf(e.key) >= 0) { e.preventDefault(); go(cur - 1); }
-    else if (e.key === 'Home') go(0); else if (e.key === 'End') go(slides.length - 1);
+    if (['ArrowRight', 'PageDown', ' ', 'Enter'].indexOf(e.key) >= 0) { e.preventDefault(); advance(1); }
+    else if (['ArrowLeft', 'PageUp', 'Backspace'].indexOf(e.key) >= 0) { e.preventDefault(); advance(-1); }
+    else if (e.key === 'Home') go(0); else if (e.key === 'End') go(talk.length - 1);
+    else if ((e.key === 'b' || e.key === 'B') && backup.length) go(cur >= talk.length ? talk.length - 1 : talk.length);
     else if (e.key === 'n' || e.key === 'N') { notes.hidden = !notes.hidden; if (!notes.hidden) showNotes(); }
     else if (e.key === 'f' || e.key === 'F') toggleFull();
     else if ((e.key === 'p' || e.key === 'P') && chan) window.open('presenter.html', 'ucluster-presenter', 'popup,width=980,height=760');
@@ -306,11 +323,11 @@ var DECK_DATA = {
   addEventListener('touchend', function (e) {
     if (READ || tx === null) return;
     var dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty; tx = null;
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) { swipedAt = Date.now(); go(cur + (dx < 0 ? 1 : -1)); }
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) { swipedAt = Date.now(); advance(dx < 0 ? 1 : -1); }
   }, { passive: true });
   addEventListener('click', function (e) {
     if (READ || EDIT || Date.now() - swipedAt < 500 || e.target.closest('a, button, summary, .notes-ov')) return;
-    go(cur + (e.clientX > innerWidth / 2 ? 1 : -1));
+    advance(e.clientX > innerWidth / 2 ? 1 : -1);
   });
   addEventListener('hashchange', function () { var h = hashN(); if (READ) { if (slides[h - 1]) slides[h - 1].scrollIntoView(); } else go(h - 1); });
 
@@ -323,7 +340,7 @@ var DECK_DATA = {
   addEventListener('afterprint', function () { if (printedFromRead) setMode(true); });
 
   // what the page editor needs from the deck
-  window.DECK = { slides: slides, talk: talk, timing: timing, timeLine: timeLine, clock: clock, go: go, fit: fit, redraw: drawCharts,
+  window.DECK = { slides: slides, talk: talk, resolve: resolve, timing: timing, timeLine: timeLine, clock: clock, go: go, fit: fit, redraw: drawCharts,
     cur: function () { return cur; }, read: function () { return READ; }, onchange: null, onmode: null };
 
   setMode(READ);

@@ -17,6 +17,8 @@ The talk is every slide before the backup section. Each talk slide's speaker not
 - **Timing.** The estimate assumes 140 words a minute and counts each number as 2.5 words, because "2.15" or "64%" takes longer to say than one word. If you speak faster or slower, treat the times as relative.
 - **Script and background.** In a note, the plain text is what we say. Text inside `<span class="bg">` is background for questions. It shows smaller under the script and is not timed.
 - **Staying in time.** The page editor shows the script's seconds and the talk's total while you type. The automatic check prints the timing for every slide and warns when the total passes 5:00.
+- **Questions afterwards.** The presenter view has a Q&A tab with the prepared questions and answers from `qa.js`, most likely first. On the last talk slide, Next opens it. Type a word or two to search. The search forgives typos and half-typed words. Enter switches the deck to the slide that goes with the selected answer, and the list of optional slides switches to any backup slide.
+- **The talk stops on its last slide.** A plain next there does nothing, so an optional slide never appears by accident. Press B, use the presenter's Q&A, or add the slide number to the address to open one.
 - **Backup slides.** These are sections with `data-backup`. The counter shows them as "Backup 3 / 11" and they do not count towards the time. To move a slide between the talk and the backup, move its whole `section` block and add or remove `data-backup`.
 
 Each round opens with the question it addresses and closes with what the tests showed. When you change a slide, read its script together with the one before and the one after.
@@ -85,6 +87,7 @@ python tools/test_editor.py
 | `deck.css` | slide layout and the phone layout | the layout itself needs to change |
 | `house.css` | the shared design system | rarely |
 | `presenter.html` | the presenter view opened with P | the presenter view changes |
+| `qa.js` | the prepared questions and answers shown in the presenter view | a question or answer changes |
 | `edit/` | the page editor, loaded only with `?edit` | the editor changes |
 | `api/` | sign-in and publishing for the page editor, run by Vercel | the editor changes |
 | `lib/htmlmap.mjs` | finds each slide element in `index.html`, for the editor and `api/` | rarely |
@@ -136,7 +139,9 @@ It runs on every pull request and every push to `main` through GitHub Actions. I
 - The iPad layout loses its two-column panels.
 - A counter, bar or chart dot no longer matches the label next to it.
 - The page editor cannot start, which usually means a tag in `index.html` is not closed.
-- The presenter view does not follow the deck window.
+- The presenter view does not follow the deck window, or its Q&A search or slide switching stops working.
+- A question in `qa.js` points at a slide that no longer exists.
+- A plain next on the last talk slide shows an optional slide.
 - A narrow window on a computer switches to the phone layout.
 - The page editor's own test fails. It edits slides, publishes through a stand-in GitHub and compares the files line by line.
 

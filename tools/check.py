@@ -16,7 +16,8 @@ Errors (the check fails):
     (data-to on counters, --v on bars, --a on the noise plot dots)
   * the page editor (?edit) failing to start, usually because a tag in index.html is not closed
     (tools/test_editor.py tests the editor itself in more depth)
-  * the presenter view (presenter.html) not following the deck window
+  * the presenter view (presenter.html) not following the deck window, a question in qa.js whose slide
+    can no longer be found, or the Q&A search and slide switching not working
   * a narrow window on a computer switching to the phone layout instead of scaling the slides
 
 Warnings (shown, but the check still passes):
@@ -226,6 +227,42 @@ def main():
             pres.wait_for_function("document.getElementById('pos').textContent.indexOf('Slide 2 ') === 0", timeout=5000)
             if len(pres.inner_text("#say").split()) < 10:
                 error("presenter view: it shows no script for slide 2")
+            # Q&A: every answer has to find its slide, the search has to survive a typo, and Enter has to switch the deck
+            sels = pres.evaluate("DECK_QA.map(x => x.slide)")
+            found = deck.evaluate("s => DECK.resolve(s)", sels)
+            for i, s in enumerate(sels):
+                if s not in found:
+                    error(f"Q&A: question {i + 1} in qa.js points at \"{s}\", which no slide holds any more. Update its slide selector.")
+            pres.keyboard.press("q")
+            pres.keyboard.type("thred placment")
+            pres.wait_for_timeout(200)
+            top = pres.inner_text("#res li b")
+            if "placement" not in top:
+                error(f"Q&A: a search for \"thred placment\" should find the thread placement question first, but found \"{top}\"")
+            want = found.get(pres.evaluate("DECK_QA.find(x => /placement/.test(x.q)).slide"))
+            pres.keyboard.press("Enter")
+            deck.wait_for_function("n => DECK.cur() === n", arg=want, timeout=5000)
+            if not deck.evaluate("DECK.slides[DECK.cur()].hasAttribute('data-backup')") and "Slide" not in pres.inner_text(".ans .at"):
+                error("Q&A: the answer does not name the slide it switched to")
+            n_opt = pres.evaluate("document.querySelectorAll('#opt button').length")
+            if n_opt != deck.evaluate("DECK.slides.length - DECK.talk.length") + 1:
+                error("Q&A: the list of optional slides does not match the deck's backup slides")
+            pres.click("#opt button:last-child")
+            deck.wait_for_function("DECK.cur() === DECK.slides.length - 1", timeout=5000)
+            # the talk stops on its last slide. One more press must not show an optional slide, and B must.
+            last = deck.evaluate("DECK.talk.length - 1")
+            deck.evaluate("n => DECK.go(n)", last)
+            deck.bring_to_front(); deck.keyboard.press("ArrowRight"); deck.wait_for_timeout(200)
+            if deck.evaluate("DECK.cur()") != last:
+                error("the deck moved past the last talk slide on a plain next. Optional slides must only open on purpose.")
+            deck.keyboard.press("b"); deck.wait_for_timeout(200)
+            if deck.evaluate("DECK.cur()") != last + 1:
+                error("B did not open the first optional slide")
+            deck.evaluate("n => DECK.go(n)", last)
+            pres.bring_to_front(); pres.click("#t-script"); pres.wait_for_function("document.getElementById('next').textContent.indexOf('Q&A') >= 0", timeout=5000)
+            pres.keyboard.press("ArrowRight"); pres.wait_for_timeout(200)
+            if pres.evaluate("document.getElementById('qa').hidden") or deck.evaluate("DECK.cur()") != last:
+                error("presenter view: next on the last talk slide should open the Q&A and leave the deck where it is")
         except Exception as e:
             error("presenter view: it did not follow the deck (" + str(e).splitlines()[0] + ")")
         ctx.close()
