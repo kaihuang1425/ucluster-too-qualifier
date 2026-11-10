@@ -16,6 +16,7 @@ Errors (the check fails):
     (data-to on counters, --v on bars, --a on the noise plot dots)
   * the page editor (?edit) failing to start, usually because a tag in index.html is not closed
     (tools/test_editor.py tests the editor itself in more depth)
+  * the presenter view (presenter.html) not following the deck window
 
 Warnings (shown, but the check still passes):
   * house writing rules in visible text and speaker notes
@@ -210,6 +211,23 @@ def main():
         for msg in ed_errors:
             error("page editor: JavaScript error: " + msg)
         ed.close()
+
+        # Presenter view: a second window that shows the script and drives the deck, so the script can stay off a shared screen
+        ctx = b.new_context(viewport={"width": 1280, "height": 800})
+        deck = ctx.new_page(); watch(deck, "deck with presenter view")
+        deck.goto(base + "?static&mode=slides#1"); deck.wait_for_function("window.DECK")
+        pres = ctx.new_page(); watch(pres, "presenter view")
+        pres.goto(base + "presenter.html")
+        try:
+            pres.wait_for_function("!document.getElementById('say').hidden", timeout=8000)
+            pres.keyboard.press("ArrowRight")
+            deck.wait_for_function("DECK.cur() === 1", timeout=5000)
+            pres.wait_for_function("document.getElementById('pos').textContent.indexOf('Slide 2 ') === 0", timeout=5000)
+            if len(pres.inner_text("#say").split()) < 10:
+                error("presenter view: it shows no script for slide 2")
+        except Exception as e:
+            error("presenter view: it did not follow the deck (" + str(e).splitlines()[0] + ")")
+        ctx.close()
         b.close()
 
         # iPhone in WebKit: reading layout, nothing wider than the screen

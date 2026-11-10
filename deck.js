@@ -218,6 +218,18 @@ var DECK_DATA = {
   function activate(s) { if (s.classList.contains('on')) return; s.classList.add('on'); s.querySelectorAll('[data-count]').forEach(count); playRelay(s); }
 
   var chap = document.getElementById('chap'), notes = document.getElementById('notes');
+  // Presenter view: P opens presenter.html in its own window. This window sends it the current slide's script and timing
+  // and follows its next and back, so in a call only this window needs sharing and the script stays private.
+  var chan = !EDIT && 'BroadcastChannel' in window ? new BroadcastChannel('ucluster-deck') : null;
+  function headOf(s) { var h = s && s.querySelector('h1, h2'); return h ? h.textContent.replace(/\s+/g, ' ').trim() : ''; }
+  function tell() {
+    if (!chan || cur < 0) return;
+    var s = slides[cur], a = s.querySelector('.notes'), c = a ? a.cloneNode(true) : null, bg = c && c.querySelector('.bg'), k = talk.indexOf(s), t = timing();
+    if (bg) c.removeChild(bg);
+    chan.postMessage({ type: 'state', n: cur, k: k, talk: talk.length, label: counter.textContent, title: headOf(s), next: headOf(slides[cur + 1]),
+      script: c ? c.innerHTML : '', bg: bg ? bg.innerHTML : '', secs: k < 0 ? 0 : t.rows[k], ends: k < 0 ? 0 : t.ends[k], total: t.total, limit: t.limit });
+  }
+  if (chan) chan.onmessage = function (e) { var m = e.data || {}; if (m.type === 'go') go(m.n); else if (m.type === 'step') go(cur + m.d); else if (m.type === 'hello') tell(); };
   function showNotes() { var a = slides[cur].querySelector('.notes'); notes.innerHTML = '<b>' + timeLine(slides[cur]) + '</b>' + (a ? a.innerHTML : 'No notes for this slide.'); }
   function go(n) {
     if (READ) return;
@@ -236,6 +248,7 @@ var DECK_DATA = {
     if (!notes.hidden) showNotes();
     history.replaceState(null, '', '#' + (n + 1));
     if (window.DECK && DECK.onchange) DECK.onchange(n);
+    tell();
   }
 
   var io = null;
@@ -283,6 +296,7 @@ var DECK_DATA = {
     else if (e.key === 'Home') go(0); else if (e.key === 'End') go(slides.length - 1);
     else if (e.key === 'n' || e.key === 'N') { notes.hidden = !notes.hidden; if (!notes.hidden) showNotes(); }
     else if (e.key === 'f' || e.key === 'F') toggleFull();
+    else if ((e.key === 'p' || e.key === 'P') && chan) window.open('presenter.html', 'ucluster-presenter', 'popup,width=980,height=760');
   });
   // touch: swipe left or right to change slide; a tap on either half still works
   var tx = null, ty = 0, swipedAt = 0;

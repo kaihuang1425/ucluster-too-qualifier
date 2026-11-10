@@ -12,6 +12,7 @@ Every change to `main` updates the live site within about a minute. Nothing need
 The talk is every slide before the backup section. Each talk slide's speaker notes hold its script, and the scripts add up to 4 minutes 51 seconds.
 
 - **Rehearse.** Press N on any slide to see its script, how long it takes, when it should end and the running total. On a phone, open the block under each slide.
+- **Present on a call.** Press P to open the presenter view in its own window. It shows the script in large type, a stopwatch, when the slide should end and what comes next, and its arrow keys move the deck. In Teams choose Share, then Window, and pick the deck window, so the presenter view stays private. Keep the deck window uncovered, because a browser stops drawing a window that is fully hidden. Both windows must be in the same browser.
 - **Timing.** The estimate assumes 140 words a minute and counts each number as 2.5 words, because "2.15" or "64%" takes longer to say than one word. If you speak faster or slower, treat the times as relative.
 - **Script and background.** In a note, the plain text is what we say. Text inside `<span class="bg">` is background for questions. It shows smaller under the script and is not timed.
 - **Staying in time.** The page editor shows the script's seconds and the talk's total while you type. The automatic check prints the timing for every slide and warns when the total passes 5:00.
@@ -82,6 +83,7 @@ python tools/test_editor.py
 | `deck.js` | chart numbers in `DECK_DATA` at the top, then the slide logic | a chart number changes |
 | `deck.css` | slide layout and the phone layout | the layout itself needs to change |
 | `house.css` | the shared design system | rarely |
+| `presenter.html` | the presenter view opened with P | the presenter view changes |
 | `edit/` | the page editor, loaded only with `?edit` | the editor changes |
 | `api/` | sign-in and publishing for the page editor, run by Vercel | the editor changes |
 | `lib/htmlmap.mjs` | finds each slide element in `index.html`, for the editor and `api/` | rarely |
@@ -132,13 +134,14 @@ It runs on every pull request and every push to `main` through GitHub Actions. I
 - The iPad layout loses its two-column panels.
 - A counter, bar or chart dot no longer matches the label next to it.
 - The page editor cannot start, which usually means a tag in `index.html` is not closed.
+- The presenter view does not follow the deck window.
 - The page editor's own test fails. It edits slides, publishes through a stand-in GitHub and compares the files line by line.
 
 It also warns, without failing, when the talk's script runs over five minutes or a talk slide has no script.
 
 ## Viewing modes
 
-- **Desktop and iPad** show slides. Use the arrow keys, click either half, or swipe. F toggles full screen and N shows the script with its timing.
+- **Desktop and iPad** show slides. Use the arrow keys, click either half, or swipe. F toggles full screen, N shows the script with its timing, and P opens the presenter view in its own window.
 - **Phones** show one scrolling page with each slide stacked below the last.
 - Add `?mode=slides` or `?mode=read` to the address to force one layout. Add `?static` to turn off animation, and `?edit` to edit.
 - Printing to PDF from a desktop browser gives one slide per page.
